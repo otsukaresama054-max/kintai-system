@@ -130,13 +130,9 @@
           sendPunch(type, position.coords.latitude, position.coords.longitude);
         },
         function (error) {
-          // 拒否・タイムアウト・取得失敗など。サーバーへは一切送信しない。
-          setStatus(
-            '位置情報の取得が許可されなかった(または失敗した)ため、打刻できませんでした。\n' +
-              '設定から位置情報の利用を許可して、もう一度お試しください。',
-            'error'
-          );
-          setButtonsDisabled(false);
+          // 拒否・タイムアウト・取得失敗など。打刻はさせないが、
+          // 「拒否された事実」は時刻付きでサーバーに記録してもらう。
+          reportLocationDenied(type, error);
         },
         {
           enableHighAccuracy: true,
@@ -146,29 +142,71 @@
       );
     }
 
+    // navigator.geolocation の GeolocationPositionError.code の意味
+    // (1: PERMISSION_DENIED, 2: POSITION_UNAVAILABLE, 3: TIMEOUT)
+    var GEOLOCATION_ERROR_REASONS = {
+      1: 'PERMISSION_DENIED(位置情報の利用が許可されなかった)',
+      2: 'POSITION_UNAVAILABLE(位置情報を取得できなかった)',
+      3: 'TIMEOUT(位置情報の取得がタイムアウトした)',
+    };
+
+    function reportLocationDenied(type, error) {
+      var reason =
+        (error && GEOLOCATION_ERROR_REASONS[error.code]) ||
+        (error && error.message) ||
+        '不明な理由';
+
+      setStatus('位置情報が取得できなかったため、その旨を記録しています…');
+
+      var idToken = liff.getIDToken && liff.getIDToken();
+      if (!idToken) {
+        // 本人確認ができないと記録もできないため、ローカルにだけ表示する。
+        setStatus(
+          '位置情報の取得が許可されなかった(または失敗した)ため、打刻できませんでした。\n' +
+            '設定から位置情報の利用を許可して、もう一度お試しください。\n' +
+            '(理由: ' + reason + ')',
+          'error'
+        );
+        setButtonsDisabled(false);
+        return;
+      }
+
+      postToServer({ idToken: idToken, type: type, locationDenied: true, reason: reason })
+        .then(function (result) {
+          if (result.denied) {
+            setStatus(
+              '位置情報の取得が許可されなかった(または失敗した)ため、打刻できませんでした。\n' +
+                '設定から位置情報の利用を許可して、もう一度お試しください。\n' +
+                '(拒否した記録: ' + result.date + ' ' + result.time + ')',
+              'error'
+            );
+          } else {
+            // 本人確認自体に失敗した場合など。拒否の記録も残せていない。
+            setStatus('位置情報の記録に失敗しました: ' + result.message, 'error');
+          }
+        })
+        .catch(function (err) {
+          setStatus(
+            '位置情報の取得が許可されなかったため打刻できず、さらに記録の保存にも失敗しました: ' + err.message,
+            'error'
+          );
+        })
+        .finally(function () {
+          setButtonsDisabled(false);
+        });
+    }
+
     function sendPunch(type, lat, lng) {
       setStatus('打刻を送信しています…');
 
-      liff.getIDToken
-        ? sendWithIdToken(type, lat, lng, liff.getIDToken())
-        : setStatus('LINEログイン情報の取得に失敗しました。', 'error');
-    }
-
-    function sendWithIdToken(type, lat, lng, idToken) {
+      var idToken = liff.getIDToken && liff.getIDToken();
       if (!idToken) {
         setStatus('LINEログイン情報が取得できませんでした。アプリを開き直してください。', 'error');
         setButtonsDisabled(false);
         return;
       }
 
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        // "text/plain" にすることでブラウザのCORSプリフライト(OPTIONS)を回避する。
-        // GAS側では e.postData.contents をJSON.parseして扱う。
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ idToken: idToken, type: type, lat: lat, lng: lng }),
-      })
-        .then(function (res) { return res.json(); })
+      postToServer({ idToken: idToken, type: type, lat: lat, lng: lng })
         .then(function (result) {
           if (result.ok) {
             setStatus(
@@ -187,6 +225,17 @@
         .finally(function () {
           setButtonsDisabled(false);
         });
+    }
+
+    // GASのWebアプリ(doPost)にJSONを送信する共通処理。
+    function postToServer(payload) {
+      return fetch(SCRIPT_URL, {
+        method: 'POST',
+        // "text/plain" にすることでブラウザのCORSプリフライト(OPTIONS)を回避する。
+        // GAS側では e.postData.contents をJSON.parseして扱う。
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      }).then(function (res) { return res.json(); });
     }
 
     btnCheckIn.addEventListener('click', function () { punch('出勤'); });

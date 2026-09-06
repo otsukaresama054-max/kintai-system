@@ -35,16 +35,25 @@ function include_(filename) {
 /**
  * 打刻APIの本体。
  * リクエストボディ(JSON)の形式:
- *   {
- *     "idToken": "LIFFのIDトークン",
- *     "type": "出勤" または "退勤",
- *     "lat": 34.6937,
- *     "lng": 135.5023
- *   }
+ *   通常の打刻:
+ *     {
+ *       "idToken": "LIFFのIDトークン",
+ *       "type": "出勤" または "退勤",
+ *       "lat": 34.6937,
+ *       "lng": 135.5023
+ *     }
+ *   位置情報の利用を拒否/取得失敗した場合(打刻はされないが記録は残す):
+ *     {
+ *       "idToken": "LIFFのIDトークン",
+ *       "type": "出勤" または "退勤",
+ *       "locationDenied": true,
+ *       "reason": "PERMISSION_DENIED" など(任意)
+ *     }
  *
  * レスポンス(JSON):
- *   成功: { "ok": true, "name": "...", "type": "...", "date": "...", "time": "...", "address": "..." }
- *   失敗: { "ok": false, "message": "..." }
+ *   打刻成功: { "ok": true, "name": "...", "type": "...", "date": "...", "time": "...", "address": "..." }
+ *   拒否記録: { "ok": false, "denied": true, "name": "...", "type": "...", "date": "...", "time": "...", "message": "..." }
+ *   失敗    : { "ok": false, "message": "..." }
  */
 function doPost(e) {
   var result;
@@ -75,16 +84,10 @@ function handlePunch_(e) {
   }
 
   var type = payload.type;
-  var lat = Number(payload.lat);
-  var lng = Number(payload.lng);
+  var locationDenied = payload.locationDenied === true;
 
   if (ATTENDANCE_TYPES.indexOf(type) === -1) {
     throw new Error('区分は「出勤」または「退勤」のいずれかを指定してください。');
-  }
-  if (!isFinite(lat) || !isFinite(lng)) {
-    // 位置情報が取得できていないリクエストは受け付けない
-    // (フロント側でも取得失敗時は送信しない実装にしているが、念のためサーバー側でも弾く)
-    throw new Error('位置情報が取得できていないため、打刻できません。');
   }
 
   // 1. LINEログインの検証(なりすまし防止。フロントの申告は信用しない)
@@ -99,6 +102,35 @@ function handlePunch_(e) {
   }
   if (!employee.active) {
     throw new Error('このアカウントは無効化されています。管理者に確認してください。');
+  }
+
+  // 位置情報の利用が拒否/取得失敗した場合は、打刻はさせず
+  // 「拒否した事実」だけを時刻付きで記録して終える。
+  if (locationDenied) {
+    var deniedSaved = appendLocationDeniedRecord_({
+      name: employee.name,
+      type: type,
+      lineUserId: employee.lineUserId,
+      reason: payload.reason ? String(payload.reason) : '',
+    });
+    return {
+      ok: false,
+      denied: true,
+      name: employee.name,
+      type: type,
+      date: deniedSaved.date,
+      time: deniedSaved.time,
+      message:
+        '位置情報の利用が許可されなかったため、' + type + 'は記録されませんでした(拒否した事実は記録されました)。',
+    };
+  }
+
+  var lat = Number(payload.lat);
+  var lng = Number(payload.lng);
+  if (!isFinite(lat) || !isFinite(lng)) {
+    // 位置情報が取得できていないリクエストは受け付けない
+    // (フロント側でも取得失敗時はlocationDenied扱いで送る実装にしているが、念のためサーバー側でも弾く)
+    throw new Error('位置情報が取得できていないため、打刻できません。');
   }
 
   // 3. 緯度経度から簡易住所を取得
