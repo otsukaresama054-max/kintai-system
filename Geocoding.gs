@@ -42,11 +42,13 @@ function reverseGeocodeToAddress_(lat, lng) {
 
     if (response.getResponseCode() !== 200) {
       // 原因調査用に、実際のステータスコードと返却内容を実行ログに残す。
+      var bodySnippet = response.getContentText().substring(0, 300);
       console.log(
         '住所取得(Nominatim)に失敗しました。 status=' + response.getResponseCode() +
-          ' body=' + response.getContentText().substring(0, 300)
+          ' body=' + bodySnippet
       );
-      return '住所取得失敗(緯度' + lat + ' 経度' + lng + ')';
+      // 実行ログを探す手間を省くため、画面にもステータスコードを直接表示する。
+      return '住所取得失敗(HTTP ' + response.getResponseCode() + ' / 緯度' + lat + ' 経度' + lng + ')';
     }
 
     var data = JSON.parse(response.getContentText());
@@ -70,7 +72,9 @@ function reverseGeocodeToAddress_(lat, lng) {
     return parts.join('');
   } catch (e) {
     // ネットワークエラー等。打刻自体は継続させるため例外は投げない。
-    console.log('住所取得(Nominatim)で例外が発生しました: ' + (e && e.message ? e.message : e));
-    return '住所取得失敗(緯度' + lat + ' 経度' + lng + ')';
+    var errMsg = e && e.message ? e.message : String(e);
+    console.log('住所取得(Nominatim)で例外が発生しました: ' + errMsg);
+    // 実行ログを探す手間を省くため、画面にも例外メッセージを直接表示する。
+    return '住所取得失敗(' + errMsg + ')';
   }
 }
