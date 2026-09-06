@@ -97,22 +97,59 @@
     }
 
     function init() {
-      liff.init({ liffId: LIFF_ID })
-        .then(function () {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-          }
-          setButtonsDisabled(false);
-          setStatus('位置情報の利用を許可すると打刻できます。');
-          return liff.getProfile().then(function (profile) {
-            // 画面表示用の参考情報。記録される氏名はサーバー側の社員マスタが正。
-            userInfoEl.textContent = 'ログイン中: ' + profile.displayName;
+      // LIFFのSDK本体(static.line-scdn.net から読み込む<script>)がブロックされている
+      // (社内ネットワークの制限など)と liff オブジェクト自体が存在せず、
+      // liff.init を呼んだ瞬間に画面に何も表示されないまま固まって見える。
+      // まずそれを検知してハッキリ表示する。
+      if (typeof liff === 'undefined') {
+        setStatus(
+          'LIFFの部品(SDK)を読み込めませんでした。\n' +
+            'ネットワーク環境(社内Wi-Fiなど)が原因の可能性があります。\n' +
+            'モバイル回線に切り替えるか、別のネットワークで開き直してください。',
+          'error'
+        );
+        return;
+      }
+
+      // liff.init が何らかの理由で応答しないまま固まった場合に備え、
+      // 一定時間で「固まっている」ことが分かるようタイムアウトを設ける。
+      var initTimedOut = false;
+      var timeoutId = setTimeout(function () {
+        initTimedOut = true;
+        setStatus(
+          '読み込みに時間がかかりすぎています。\n' +
+            '画面を閉じて開き直すか、別のネットワーク(モバイル回線⇔Wi-Fi)で試してください。',
+          'error'
+        );
+      }, 12000);
+
+      try {
+        liff
+          .init({ liffId: LIFF_ID })
+          .then(function () {
+            clearTimeout(timeoutId);
+            if (initTimedOut) return; // 既にタイムアウト表示済みなら何もしない
+            if (!liff.isLoggedIn()) {
+              liff.login();
+              return;
+            }
+            setButtonsDisabled(false);
+            setStatus('位置情報の利用を許可すると打刻できます。');
+            return liff.getProfile().then(function (profile) {
+              // 画面表示用の参考情報。記録される氏名はサーバー側の社員マスタが正。
+              userInfoEl.textContent = 'ログイン中: ' + profile.displayName;
+            });
+          })
+          .catch(function (err) {
+            clearTimeout(timeoutId);
+            if (initTimedOut) return;
+            setStatus('LIFFの初期化に失敗しました: ' + (err && err.message ? err.message : err), 'error');
           });
-        })
-        .catch(function (err) {
-          setStatus('LIFFの初期化に失敗しました: ' + err.message, 'error');
-        });
+      } catch (syncErr) {
+        // liff.init 自体が同期的に例外を投げた場合(SDKの読み込み不備など)の保険。
+        clearTimeout(timeoutId);
+        setStatus('LIFFの初期化中にエラーが発生しました: ' + syncErr.message, 'error');
+      }
     }
 
     function punch(type) {
