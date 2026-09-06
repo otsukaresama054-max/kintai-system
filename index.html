@@ -97,13 +97,6 @@
       letter-spacing: 0.01em;
       line-height: 1.1;
     }
-    .headerSub {
-      text-align: center;
-      color: rgba(255,255,255,0.85);
-      font-size: 18px;
-      margin-top: 10px;
-      letter-spacing: 0.1em;
-    }
     #userInfo {
       text-align: center;
       color: #5b6b82;
@@ -117,7 +110,7 @@
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 26px;
+      gap: 44px;
       margin-bottom: 34px;
     }
     button.punch {
@@ -152,28 +145,25 @@
     #btnCheckIn { background: var(--brand-primary); }
     #btnCheckOut { background: var(--brand-secondary); }
 
+    /* 位置情報の案内・打刻結果の表示。以前は白背景の箱で囲っていたが、
+       他の要素と合わせてフレームを撤廃し、文字だけをシート上に
+       直接表示する形にした。状態は文字色だけで示す。 */
     #status {
-      padding: 24px 24px;
-      border-radius: 18px;
-      background: #fff;
-      /* border-radiusと相性の悪い border-left の代わりに、
-         内側に食い込む影(inset box-shadow)でアクセントの縦線を表現する。
-         overflow: hidden で角丸からのはみ出しも確実に防ぐ。 */
-      box-shadow: inset 5px 0 0 #c9d6e8, 0 1px 4px rgba(0,0,0,0.06);
-      overflow: hidden;
-      font-size: 21px;
-      line-height: 1.6;
+      text-align: center;
+      color: var(--brand-text);
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 1.5;
       white-space: pre-wrap;
       min-height: 24px;
     }
-    #status.error { color: #b3261e; box-shadow: inset 5px 0 0 #b3261e, 0 1px 4px rgba(0,0,0,0.06); }
-    #status.success { color: #1b6e3c; box-shadow: inset 5px 0 0 #1b6e3c, 0 1px 4px rgba(0,0,0,0.06); }
+    #status.error { color: #b3261e; }
+    #status.success { color: #1b6e3c; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>扇マシナリー株式会社</h1>
-    <div class="headerSub">出退勤管理システム</div>
   </div>
 
   <div class="sheet">
