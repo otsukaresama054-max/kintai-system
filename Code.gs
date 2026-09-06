@@ -2,34 +2,30 @@
  * Code.gs
  * ------------------------------------------------------------
  * Webアプリのエントリーポイント。
- *   doGet  : LIFF画面(HTML)を返す
- *   doPost : 打刻APIを処理し、結果をJSONで返す
+ *
+ * LIFFの画面(HTML)はここでは配信しない。GASのHtmlServiceは
+ * ページを内部でiframeに入れて配信する仕様になっており、これが
+ * LINEログインの仕組みと相性が悪く正しく動作しないため、画面は
+ * GitHub Pagesなど別の静的ホスティングで公開し、このGASは
+ * 「打刻データを受け取ってスプレッドシートに記録する」 AI(API)専用に
+ * している(詳しくはREADME参照)。
+ *
+ *   doGet  : このURLがAPI専用であることを知らせる簡単な案内を返す
+ *   doPost : 打刻APIを処理し、結果をJSONで返す(画面側からfetchで呼ばれる)
  * ------------------------------------------------------------
  */
 
 var ATTENDANCE_TYPES = ['出勤', '退勤'];
 
 /**
- * LIFF画面を表示する。
+ * ブラウザで直接このURLを開いてしまった人向けの案内。
+ * (LIFF画面は別ホスティングにあるため、ここでは何も表示しない)
  */
 function doGet(e) {
-  var template = HtmlService.createTemplateFromFile('Index');
-  template.liffId = getLiffId_();
-  template.scriptUrl = ScriptApp.getService().getUrl();
-  return template
-    .evaluate()
-    .setTitle('出退勤管理')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-/**
- * liff/Index.html から他のHTML断片を読み込むためのヘルパー。
- * (今回は単一ファイル構成のため未使用だが、画面を分割したくなった
- * ときのために用意している)
- */
-function include_(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  return ContentService.createTextOutput(
+    'このURLは出退勤管理システムのAPI用エンドポイントです。\n' +
+      '打刻画面はこちらではなく、LIFFアプリ(LINE)から開いてください。'
+  ).setMimeType(ContentService.MimeType.TEXT);
 }
 
 /**

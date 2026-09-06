@@ -11,9 +11,11 @@
  *   LINE_CHANNEL_ID      : LIFFを追加した「LINEログインチャネル」のChannel ID
  *                          (Messaging API用チャネルのIDとは別物なので注意)
  *   LINE_CHANNEL_SECRET  : 上記チャネルのChannel Secret
- *   LIFF_ID              : LIFFアプリのID
  *   SPREADSHEET_ID       : 記録先スプレッドシートのID
  *   NOTIFY_EMAILS        : 通知先メールアドレス(カンマ区切りで複数可)
+ *
+ * ※ LIFF IDはこのGAS側では使わない(LIFFの画面はGitHub Pages等の
+ *   別ホスティング側にあり、そちらのHTMLファイルに直接書き込む)。
  * ------------------------------------------------------------
  */
 
@@ -44,14 +46,6 @@ function getScriptProperty_(key, required) {
 
 function getLineChannelId_() {
   return getScriptProperty_('LINE_CHANNEL_ID');
-}
-
-/**
- * LIFFアプリのID (例: "1234567890-AbCdEfGh")。
- * LINE Developersコンソールで作成したLIFFアプリのIDを設定する。
- */
-function getLiffId_() {
-  return getScriptProperty_('LIFF_ID');
 }
 
 function getLineChannelSecret_() {

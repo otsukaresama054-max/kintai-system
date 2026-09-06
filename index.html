@@ -1,3 +1,13 @@
+<!--
+  この画面はGitHub Pagesなど「静的ページ」として公開して使うファイルです。
+  Google Apps Script(GAS)にそのままHTMLとして貼るものではありません。
+  (Apps ScriptのHtmlServiceが自動でページをiframeの中に入れてしまう仕様と、
+   LINEログインの仕組みが相性が悪く、正しく動かないための構成変更です)
+
+  公開後、下の「設定」セクションにある2つの値を、実際の値に書き換えてください:
+    - LIFF_ID   … LINE Developersで発行されたLIFF ID
+    - SCRIPT_URL … Google Apps Scriptの「デプロイ」で発行された .../exec のURL
+-->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -78,8 +88,10 @@
   <div id="status">準備中です。しばらくお待ちください。</div>
 
   <script>
-    var LIFF_ID = '<?= liffId ?>';
-    var SCRIPT_URL = '<?= scriptUrl ?>';
+    // ▼▼▼ 設定:ここを実際の値に書き換えてください ▼▼▼
+    var LIFF_ID = 'YOUR_LIFF_ID_HERE'; // LINE Developersで発行されたLIFF ID
+    var SCRIPT_URL = 'YOUR_GAS_EXEC_URL_HERE'; // Apps Scriptの .../exec URL
+    // ▲▲▲ ここまで ▲▲▲
 
     var statusEl = document.getElementById('status');
     var userInfoEl = document.getElementById('userInfo');
@@ -97,6 +109,15 @@
     }
 
     function init() {
+      if (LIFF_ID === 'YOUR_LIFF_ID_HERE' || SCRIPT_URL === 'YOUR_GAS_EXEC_URL_HERE') {
+        setStatus(
+          'このページ上部の LIFF_ID / SCRIPT_URL がまだ書き換えられていません。\n' +
+            'index.html を編集して、実際の値を入力してください。',
+          'error'
+        );
+        return;
+      }
+
       // LIFFのSDK本体(static.line-scdn.net から読み込む<script>)がブロックされている
       // (社内ネットワークの制限など)と liff オブジェクト自体が存在せず、
       // liff.init を呼んだ瞬間に画面に何も表示されないまま固まって見える。
