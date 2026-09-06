@@ -48,29 +48,26 @@
       flex-shrink: 0;
     }
 
-    /* ヘッダーの下に重なるように配置する、白い「シート」。
-       画面の残り高さいっぱいに広がるが、中のカードは無理に
-       引き伸ばさず、ほどよいサイズのまま縦方向中央に置く
-       (画面いっぱいに引き伸ばすと間延びして不格好になったため)。 */
+    /* ヘッダーの下に重なるように配置する「シート」。
+       時計・ボタン等を囲う白い箱(フレーム)は撤廃し、
+       ヘッダー帯のすぐ下に直接並べる構成にした。 */
     .sheet {
       flex: 1;
       background: var(--brand-bg);
       border-radius: 28px 28px 0 0;
       margin-top: -32px;
-      padding: 22px 6px 26px;
+      padding: 40px 10px 26px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
     }
 
+    /* 中身の横幅をそろえる/中央寄せするための、見た目には出ない箱。
+       以前あった白背景・角丸・影の「フレーム」は撤廃した。 */
     .card {
       width: 100%;
-      max-width: 560px;
+      max-width: 640px;
       margin: 0 auto;
-      background: #fff;
-      border-radius: 30px;
-      box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 44px 14px;
+      padding: 0 6px;
     }
 
     /* 現在時刻の表示。実用性を兼ねつつ、画面の余白を自然に埋める役割も持たせる。 */
@@ -175,8 +172,8 @@
 </head>
 <body>
   <div class="header">
-    <h1>出退勤管理</h1>
-    <div class="headerSub">ATTENDANCE SYSTEM</div>
+    <h1>扇マシナリー株式会社</h1>
+    <div class="headerSub">出退勤管理システム</div>
   </div>
 
   <div class="sheet">
