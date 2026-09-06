@@ -32,38 +32,64 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
-      background: var(--brand-bg);
       color: #222;
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
+      flex-direction: column;
+      background: var(--brand-primary);
     }
 
-    /* 画面全体の中央に浮かぶ「カード」。アプリらしい見た目にするための土台。 */
+    /* 上部の色帯(ヘッダー)。画面上部を占めて「アプリらしさ」を出す。 */
+    .header {
+      background: linear-gradient(160deg, var(--brand-primary), var(--brand-secondary));
+      color: #fff;
+      text-align: center;
+      padding: 44px 24px 64px;
+      flex-shrink: 0;
+    }
+
+    /* ヘッダーの下に重なるように配置する、白い「シート」。
+       画面の残り高さいっぱいに広がり、実際の操作要素はここに置く。 */
+    .sheet {
+      flex: 1;
+      background: var(--brand-bg);
+      border-radius: 28px 28px 0 0;
+      margin-top: -32px;
+      padding: 34px 22px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
     .card {
       width: 100%;
       max-width: 380px;
+      margin: 0 auto;
       background: #fff;
       border-radius: 22px;
       box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 36px 26px 30px;
+      padding: 30px 24px;
     }
 
     h1 {
-      font-size: 21px;
+      font-size: 22px;
       font-weight: 700;
       text-align: center;
-      margin: 0 0 6px;
-      color: var(--brand-text);
+      margin: 0;
+      color: #fff;
       letter-spacing: 0.03em;
+    }
+    .headerSub {
+      text-align: center;
+      color: rgba(255,255,255,0.8);
+      font-size: 12px;
+      margin-top: 6px;
+      letter-spacing: 0.08em;
     }
     #userInfo {
       text-align: center;
       color: #5b6b82;
       font-size: 13px;
-      margin-bottom: 30px;
+      margin-bottom: 26px;
       min-height: 18px;
     }
     .buttons {
@@ -122,30 +148,36 @@
   </style>
 </head>
 <body>
-  <div class="card">
+  <div class="header">
     <h1>出退勤管理</h1>
-    <div id="userInfo">読み込み中...</div>
+    <div class="headerSub">ATTENDANCE SYSTEM</div>
+  </div>
 
-    <div class="buttons">
-      <button id="btnCheckIn" class="punch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-          <polyline points="10 17 15 12 10 7"></polyline>
-          <line x1="15" y1="12" x2="3" y2="12"></line>
-        </svg>
-        出　勤
-      </button>
-      <button id="btnCheckOut" class="punch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        退　勤
-      </button>
+  <div class="sheet">
+    <div class="card">
+      <div id="userInfo">読み込み中...</div>
+
+      <div class="buttons">
+        <button id="btnCheckIn" class="punch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+            <polyline points="10 17 15 12 10 7"></polyline>
+            <line x1="15" y1="12" x2="3" y2="12"></line>
+          </svg>
+          出　勤
+        </button>
+        <button id="btnCheckOut" class="punch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          退　勤
+        </button>
+      </div>
+
+      <div id="status">準備中です。しばらくお待ちください。</div>
     </div>
-
-    <div id="status">準備中です。しばらくお待ちください。</div>
   </div>
 
   <script>
