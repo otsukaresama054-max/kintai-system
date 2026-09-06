@@ -55,42 +55,48 @@
       background: var(--brand-bg);
       border-radius: 28px 28px 0 0;
       margin-top: -32px;
-      padding: 34px 22px 40px;
+      padding: 28px 18px 32px;
       display: flex;
       flex-direction: column;
-      justify-content: center; /* カードを残り高さの中央に据える */
     }
 
+    /* カード自体をシートの残り高さいっぱいまで伸ばし、中の3つの要素
+       (時計+氏名 / ボタン / ステータス)を上・中・下に配分する。
+       これで画面の下がスカスカにならず、1画面のアプリらしい構成になる。 */
     .card {
+      flex: 1;
       width: 100%;
       max-width: 380px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 22px;
+      border-radius: 24px;
       box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 34px 24px;
+      padding: 36px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     /* 現在時刻の表示。実用性を兼ねつつ、画面の余白を自然に埋める役割も持たせる。 */
     #clock {
       text-align: center;
-      margin-bottom: 8px;
     }
     #clockTime {
-      font-size: 44px;
+      font-size: 64px;
       font-weight: 700;
       color: var(--brand-text);
       letter-spacing: 0.02em;
+      line-height: 1.1;
       font-variant-numeric: tabular-nums;
     }
     #clockDate {
-      font-size: 14px;
+      font-size: 17px;
       color: #6b7c93;
-      margin-top: 2px;
+      margin-top: 6px;
     }
 
     h1 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       text-align: center;
       margin: 0;
@@ -99,36 +105,36 @@
     }
     .headerSub {
       text-align: center;
-      color: rgba(255,255,255,0.8);
-      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
       margin-top: 6px;
       letter-spacing: 0.08em;
     }
     #userInfo {
       text-align: center;
       color: #5b6b82;
-      font-size: 13px;
-      margin-bottom: 26px;
-      min-height: 18px;
+      font-size: 16px;
+      margin-top: 14px;
+      min-height: 20px;
     }
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 20px;
     }
     button.punch {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      font-size: 23px;
+      gap: 14px;
+      font-size: 26px;
       font-weight: bold;
-      padding: 24px 0;
+      padding: 28px 0;
       border: none;
-      border-radius: 16px;
+      border-radius: 18px;
       color: #fff;
       cursor: pointer;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       box-shadow: 0 4px 10px rgba(30, 58, 95, 0.28);
       transition: opacity 0.15s, transform 0.1s;
     }
@@ -141,23 +147,23 @@
       box-shadow: none;
     }
     button.punch svg {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       flex-shrink: 0;
     }
     #btnCheckIn { background: var(--brand-primary); }
     #btnCheckOut { background: var(--brand-secondary); }
 
     #status {
-      margin: 26px 0 0;
-      padding: 16px 18px;
-      border-radius: 12px;
+      padding: 18px 20px;
+      border-radius: 14px;
       background: #fff;
       /* border-radiusと相性の悪い border-left の代わりに、
          内側に食い込む影(inset box-shadow)でアクセントの縦線を表現する。
-         こうすると角丸の形にきれいに沿ってくれる。 */
+         overflow: hidden で角丸からのはみ出しも確実に防ぐ。 */
       box-shadow: inset 4px 0 0 #c9d6e8, 0 1px 4px rgba(0,0,0,0.06);
-      font-size: 14px;
+      overflow: hidden;
+      font-size: 16px;
       line-height: 1.6;
       white-space: pre-wrap;
       min-height: 24px;
@@ -174,12 +180,13 @@
 
   <div class="sheet">
     <div class="card">
-      <div id="clock">
-        <div id="clockTime">--:--</div>
-        <div id="clockDate">----年--月--日(-)</div>
+      <div class="topGroup">
+        <div id="clock">
+          <div id="clockTime">--:--</div>
+          <div id="clockDate">----年--月--日(-)</div>
+        </div>
+        <div id="userInfo">読み込み中...</div>
       </div>
-
-      <div id="userInfo">読み込み中...</div>
 
       <div class="buttons">
         <button id="btnCheckIn" class="punch">
