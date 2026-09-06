@@ -44,7 +44,7 @@
       background: linear-gradient(160deg, var(--brand-primary), var(--brand-secondary));
       color: #fff;
       text-align: center;
-      padding: 44px 24px 64px;
+      padding: 48px 24px 68px;
       flex-shrink: 0;
     }
 
@@ -65,12 +65,12 @@
 
     .card {
       width: 100%;
-      max-width: 380px;
+      max-width: 420px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 24px;
+      border-radius: 26px;
       box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 40px 26px;
+      padding: 46px 30px;
     }
 
     /* 現在時刻の表示。実用性を兼ねつつ、画面の余白を自然に埋める役割も持たせる。 */
@@ -78,7 +78,7 @@
       text-align: center;
     }
     #clockTime {
-      font-size: 64px;
+      font-size: 84px;
       font-weight: 700;
       color: var(--brand-text);
       letter-spacing: 0.02em;
@@ -86,13 +86,13 @@
       font-variant-numeric: tabular-nums;
     }
     #clockDate {
-      font-size: 17px;
+      font-size: 21px;
       color: #6b7c93;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     h1 {
-      font-size: 24px;
+      font-size: 32px;
       font-weight: 700;
       text-align: center;
       margin: 0;
@@ -102,36 +102,36 @@
     .headerSub {
       text-align: center;
       color: rgba(255,255,255,0.85);
-      font-size: 13px;
-      margin-top: 6px;
+      font-size: 15px;
+      margin-top: 8px;
       letter-spacing: 0.08em;
     }
     #userInfo {
       text-align: center;
       color: #5b6b82;
-      font-size: 16px;
-      margin-top: 14px;
-      min-height: 20px;
+      font-size: 19px;
+      margin-top: 16px;
+      min-height: 24px;
     }
     .topGroup {
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      margin-bottom: 26px;
+      gap: 22px;
+      margin-bottom: 30px;
     }
     button.punch {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
-      font-size: 26px;
+      gap: 16px;
+      font-size: 30px;
       font-weight: bold;
-      padding: 28px 0;
+      padding: 32px 0;
       border: none;
-      border-radius: 18px;
+      border-radius: 20px;
       color: #fff;
       cursor: pointer;
       letter-spacing: 0.08em;
@@ -147,23 +147,23 @@
       box-shadow: none;
     }
     button.punch svg {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       flex-shrink: 0;
     }
     #btnCheckIn { background: var(--brand-primary); }
     #btnCheckOut { background: var(--brand-secondary); }
 
     #status {
-      padding: 18px 20px;
-      border-radius: 14px;
+      padding: 20px 22px;
+      border-radius: 16px;
       background: #fff;
       /* border-radiusと相性の悪い border-left の代わりに、
          内側に食い込む影(inset box-shadow)でアクセントの縦線を表現する。
          overflow: hidden で角丸からのはみ出しも確実に防ぐ。 */
       box-shadow: inset 4px 0 0 #c9d6e8, 0 1px 4px rgba(0,0,0,0.06);
       overflow: hidden;
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1.6;
       white-space: pre-wrap;
       min-height: 24px;
