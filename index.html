@@ -49,7 +49,9 @@
     }
 
     /* ヘッダーの下に重なるように配置する、白い「シート」。
-       画面の残り高さいっぱいに広がり、実際の操作要素はここに置く。 */
+       画面の残り高さいっぱいに広がるが、中のカードは無理に
+       引き伸ばさず、ほどよいサイズのまま縦方向中央に置く
+       (画面いっぱいに引き伸ばすと間延びして不格好になったため)。 */
     .sheet {
       flex: 1;
       background: var(--brand-bg);
@@ -58,23 +60,17 @@
       padding: 28px 18px 32px;
       display: flex;
       flex-direction: column;
+      justify-content: center;
     }
 
-    /* カード自体をシートの残り高さいっぱいまで伸ばし、中の3つの要素
-       (時計+氏名 / ボタン / ステータス)を上・中・下に配分する。
-       これで画面の下がスカスカにならず、1画面のアプリらしい構成になる。 */
     .card {
-      flex: 1;
       width: 100%;
       max-width: 380px;
       margin: 0 auto;
       background: #fff;
       border-radius: 24px;
       box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 36px 26px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      padding: 40px 26px;
     }
 
     /* 現在時刻の表示。実用性を兼ねつつ、画面の余白を自然に埋める役割も持たせる。 */
@@ -117,10 +113,14 @@
       margin-top: 14px;
       min-height: 20px;
     }
+    .topGroup {
+      margin-bottom: 32px;
+    }
     .buttons {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      margin-bottom: 26px;
     }
     button.punch {
       display: flex;
