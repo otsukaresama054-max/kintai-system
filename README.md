@@ -6,7 +6,7 @@ Googleスプレッドシートに記録、打刻の都度メール通知を送�
 ## 1. 全体構成
 
 ```
-[LINEアプリ] → LIFF画面(liff/Index.html)
+[LINEアプリ] → LIFF画面(Index.html)
                   │ 位置情報取得(毎回許可を要求。拒否時は打刻不可)
                   ▼
         GAS Web App (doPost / Code.gs)
@@ -30,7 +30,7 @@ Googleスプレッドシートに記録、打刻の都度メール通知を送�
 | `Geocoding.gs` | 緯度経度→簡易住所変換 |
 | `Notify.gs` | 通知処理(独立関数。宛先追加・通知方法追加はここを触るだけでよい) |
 | `Setup.gs` | 初回セットアップ用(シート・ヘッダー自動作成) |
-| `liff/Index.html` | LIFF画面 |
+| `Index.html` | LIFF画面 |
 
 ## 3. 事前準備
 

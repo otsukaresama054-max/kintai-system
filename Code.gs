@@ -13,7 +13,7 @@ var ATTENDANCE_TYPES = ['出勤', '退勤'];
  * LIFF画面を表示する。
  */
 function doGet(e) {
-  var template = HtmlService.createTemplateFromFile('liff/Index');
+  var template = HtmlService.createTemplateFromFile('Index');
   template.liffId = getLiffId_();
   template.scriptUrl = ScriptApp.getService().getUrl();
   return template
