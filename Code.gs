@@ -93,18 +93,20 @@ function handlePunch_(e) {
   var employee = findEmployeeByLineUserId_(lineProfile.userId);
   if (!employee) {
     // 初期セットアップ時、管理者がEmployeesシートに登録すべきLINE UserIDを
-    // 確認できるよう、実行ログに出力しておく(Apps Scriptエディタの
-    // 「実行数」から確認できる)。個人情報を含むログのため、確認できたら
-    // Employeesシートへの登録が済み次第このログは特に消さなくてもよい
-    // (次回以降は登録済みのためこの分岐は通らなくなる)。
+    // 確認できるよう、実行ログにも出力しておく(Apps Scriptエディタの
+    // 「実行数」から確認できる)。
     console.log(
       '未登録のLINEアカウントからアクセスがありました。 LINE UserID: ' +
         lineProfile.userId +
         ' / LINE表示名: ' +
         lineProfile.displayName
     );
+    // 実行ログを探すのが手間なので、画面にもLINE UserIDをそのまま表示する。
+    // (本人が自分自身のUserIDを画面で確認できるだけで、他人に漏れるものではない)
     throw new Error(
-      '社員マスタに未登録のLINEアカウントです。管理者に「Employees」シートへの登録を依頼してください。'
+      '社員マスタに未登録のLINEアカウントです。管理者にこのLINE UserIDを' +
+        'Employeesシートに登録してもらってください。\n' +
+        'LINE UserID: ' + lineProfile.userId
     );
   }
   if (!employee.active) {
