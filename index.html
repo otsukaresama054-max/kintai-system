@@ -58,6 +58,7 @@
       padding: 34px 22px 40px;
       display: flex;
       flex-direction: column;
+      justify-content: center; /* カードを残り高さの中央に据える */
     }
 
     .card {
@@ -67,7 +68,25 @@
       background: #fff;
       border-radius: 22px;
       box-shadow: 0 8px 28px rgba(30, 58, 95, 0.14);
-      padding: 30px 24px;
+      padding: 34px 24px;
+    }
+
+    /* 現在時刻の表示。実用性を兼ねつつ、画面の余白を自然に埋める役割も持たせる。 */
+    #clock {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    #clockTime {
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--brand-text);
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    #clockDate {
+      font-size: 14px;
+      color: #6b7c93;
+      margin-top: 2px;
     }
 
     h1 {
@@ -155,6 +174,11 @@
 
   <div class="sheet">
     <div class="card">
+      <div id="clock">
+        <div id="clockTime">--:--</div>
+        <div id="clockDate">----年--月--日(-)</div>
+      </div>
+
       <div id="userInfo">読み込み中...</div>
 
       <div class="buttons">
@@ -190,6 +214,25 @@
     var userInfoEl = document.getElementById('userInfo');
     var btnCheckIn = document.getElementById('btnCheckIn');
     var btnCheckOut = document.getElementById('btnCheckOut');
+    var clockTimeEl = document.getElementById('clockTime');
+    var clockDateEl = document.getElementById('clockDate');
+
+    var WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+    function pad2_(n) {
+      return n < 10 ? '0' + n : String(n);
+    }
+
+    // 画面上部の現在時刻表示を更新する(1秒ごとに呼ばれる)。
+    function updateClock_() {
+      var now = new Date();
+      clockTimeEl.textContent = pad2_(now.getHours()) + ':' + pad2_(now.getMinutes());
+      clockDateEl.textContent =
+        now.getFullYear() + '年' + pad2_(now.getMonth() + 1) + '月' + pad2_(now.getDate()) + '日' +
+        '(' + WEEKDAY_JA[now.getDay()] + ')';
+    }
+    updateClock_();
+    setInterval(updateClock_, 1000);
 
     function setStatus(message, kind) {
       statusEl.textContent = message;
