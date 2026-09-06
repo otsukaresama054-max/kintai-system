@@ -8,7 +8,8 @@
  * 事前に [プロジェクトの設定] > [スクリプト プロパティ] で
  * 以下のキーを設定しておくこと。
  *
- *   LINE_CHANNEL_ID      : LIFFが属するLINEチャネルのChannel ID
+ *   LINE_CHANNEL_ID      : LIFFを追加した「LINEログインチャネル」のChannel ID
+ *                          (Messaging API用チャネルのIDとは別物なので注意)
  *   LINE_CHANNEL_SECRET  : 上記チャネルのChannel Secret
  *   LIFF_ID              : LIFFアプリのID
  *   SPREADSHEET_ID       : 記録先スプレッドシートのID

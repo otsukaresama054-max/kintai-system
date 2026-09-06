@@ -67,12 +67,19 @@ Googleスプレッドシートに記録、打刻の都度メール通知を送�
 
 ### 3.2 LINE Developersでの設定
 
-1. 既存のMessaging API用チャネル(Channel ID / Channel Secret取得済み)に、
-   LIFFアプリを追加します(LINE Developersコンソール > 該当チャネル > LIFF > 追加)。
+> **注意**: 2019年以降、LIFFアプリは既存の **Messaging API用チャネルには直接追加できません**。
+> LIFFを追加するには **「LINEログイン」チャネルを別途新規作成**し、そちらに追加する必要があります
+> (Messaging API用のチャネルとは別物として、同じプロバイダーの中にもう1つ作る形になります)。
+
+1. LINE Developersコンソールで、Messaging API用チャネルと同じプロバイダーの中に
+   **新規チャネル作成 > チャネルの種類「LINEログイン」** で新しいチャネルを作成します。
+2. 作成した**LINEログインチャネル**の中の「LIFF」タブ > 「追加」でLIFFアプリを追加します。
    - **Size**: Full を推奨(位置情報許可ダイアログが見やすいため)
    - **Endpoint URL**: 後述のWebアプリ公開URL(`.../exec`)を設定
    - **Scope**: `profile`, `openid` にチェック
-2. 発行された **LIFF ID**(例: `1234567890-AbCdEfGh`)を控えておきます。
+3. 発行された **LIFF ID**(例: `1234567890-AbCdEfGh`)を控えておきます。
+4. この**LINEログインチャネル**の「チャネル基本設定」タブにある **Channel ID** も控えておきます
+   (次のスクリプトプロパティ設定で使います。Messaging API用チャネルのChannel IDとは別物です)。
 
 ### 3.3 スクリプトプロパティの設定
 
@@ -80,8 +87,8 @@ Apps Scriptエディタの [プロジェクトの設定] > [スクリプト プ�
 
 | キー | 値 |
 |---|---|
-| `LINE_CHANNEL_ID` | LIFFが属するチャネルのChannel ID |
-| `LINE_CHANNEL_SECRET` | 上記チャネルのChannel Secret |
+| `LINE_CHANNEL_ID` | **LINEログインチャネル**(LIFFを追加した方)のChannel ID(3.2の4.) |
+| `LINE_CHANNEL_SECRET` | Messaging API用チャネルのChannel Secret(現状は未使用だが将来のLINE通知拡張用に保持) |
 | `LIFF_ID` | 3.2で発行されたLIFF ID |
 | `SPREADSHEET_ID` | 3.1で作成したスプレッドシートのID |
 | `NOTIFY_EMAILS` | 通知先メールアドレス(複数はカンマ区切り。例: `a@example.com,b@example.com`) |
