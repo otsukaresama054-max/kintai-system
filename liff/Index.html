@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>出退勤管理</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 20px 16px 40px;
+      background: #f5f6f8;
+      color: #222;
+    }
+    h1 {
+      font-size: 18px;
+      text-align: center;
+      margin: 8px 0 4px;
+    }
+    #userInfo {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 20px;
+      min-height: 18px;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    button.punch {
+      font-size: 22px;
+      font-weight: bold;
+      padding: 22px 0;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button.punch:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #btnCheckIn { background: #2e9e5b; }
+    #btnCheckOut { background: #d64545; }
+
+    #status {
+      max-width: 360px;
+      margin: 24px auto 0;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      min-height: 24px;
+    }
+    #status.error { color: #b3261e; }
+    #status.success { color: #1b6e3c; }
+  </style>
+</head>
+<body>
+  <h1>出退勤管理</h1>
+  <div id="userInfo">読み込み中...</div>
+
+  <div class="buttons">
+    <button id="btnCheckIn" class="punch">出　勤</button>
+    <button id="btnCheckOut" class="punch">退　勤</button>
+  </div>
+
+  <div id="status">準備中です。しばらくお待ちください。</div>
+
+  <script>
+    var LIFF_ID = '<?= liffId ?>';
+    var SCRIPT_URL = '<?= scriptUrl ?>';
+
+    var statusEl = document.getElementById('status');
+    var userInfoEl = document.getElementById('userInfo');
+    var btnCheckIn = document.getElementById('btnCheckIn');
+    var btnCheckOut = document.getElementById('btnCheckOut');
+
+    function setStatus(message, kind) {
+      statusEl.textContent = message;
+      statusEl.className = kind || '';
+    }
+
+    function setButtonsDisabled(disabled) {
+      btnCheckIn.disabled = disabled;
+      btnCheckOut.disabled = disabled;
+    }
+
+    function init() {
+      liff.init({ liffId: LIFF_ID })
+        .then(function () {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+          }
+          setButtonsDisabled(false);
+          setStatus('位置情報の利用を許可すると打刻できます。');
+          return liff.getProfile().then(function (profile) {
+            // 画面表示用の参考情報。記録される氏名はサーバー側の社員マスタが正。
+            userInfoEl.textContent = 'ログイン中: ' + profile.displayName;
+          });
+        })
+        .catch(function (err) {
+          setStatus('LIFFの初期化に失敗しました: ' + err.message, 'error');
+        });
+    }
+
+    function punch(type) {
+      setButtonsDisabled(true);
+      setStatus('位置情報の取得を確認しています…(許可ダイアログが表示されます)');
+
+      if (!navigator.geolocation) {
+        setStatus('この端末では位置情報が利用できないため、打刻できません。', 'error');
+        setButtonsDisabled(false);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          sendPunch(type, position.coords.latitude, position.coords.longitude);
+        },
+        function (error) {
+          // 拒否・タイムアウト・取得失敗など。サーバーへは一切送信しない。
+          setStatus(
+            '位置情報の取得が許可されなかった(または失敗した)ため、打刻できませんでした。\n' +
+              '設定から位置情報の利用を許可して、もう一度お試しください。',
+            'error'
+          );
+          setButtonsDisabled(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0, // キャッシュされた古い位置情報は使わず、必ず最新を取得する
+        }
+      );
+    }
+
+    function sendPunch(type, lat, lng) {
+      setStatus('打刻を送信しています…');
+
+      liff.getIDToken
+        ? sendWithIdToken(type, lat, lng, liff.getIDToken())
+        : setStatus('LINEログイン情報の取得に失敗しました。', 'error');
+    }
+
+    function sendWithIdToken(type, lat, lng, idToken) {
+      if (!idToken) {
+        setStatus('LINEログイン情報が取得できませんでした。アプリを開き直してください。', 'error');
+        setButtonsDisabled(false);
+        return;
+      }
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        // "text/plain" にすることでブラウザのCORSプリフライト(OPTIONS)を回避する。
+        // GAS側では e.postData.contents をJSON.parseして扱う。
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ idToken: idToken, type: type, lat: lat, lng: lng }),
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (result) {
+          if (result.ok) {
+            setStatus(
+              result.type + 'を記録しました。\n' +
+                result.date + ' ' + result.time + '\n' +
+                result.address,
+              'success'
+            );
+          } else {
+            setStatus('打刻に失敗しました: ' + result.message, 'error');
+          }
+        })
+        .catch(function (err) {
+          setStatus('通信エラーにより打刻に失敗しました: ' + err.message, 'error');
+        })
+        .finally(function () {
+          setButtonsDisabled(false);
+        });
+    }
+
+    btnCheckIn.addEventListener('click', function () { punch('出勤'); });
+    btnCheckOut.addEventListener('click', function () { punch('退勤'); });
+    setButtonsDisabled(true);
+
+    init();
+  </script>
+</body>
+</html>
