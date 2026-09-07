@@ -278,13 +278,31 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
   return pdfBlob;
 }
 
+// 表の列幅(ポイント数)。列: 日付・区分・時刻・位置情報(簡易)。
+// 「位置情報」が折り返して何行にもなってしまわないよう、他の列を
+// 詰めてその分を位置情報に多く配分している。
+var ATTENDANCE_TABLE_COLUMN_WIDTHS = [80, 40, 60, 280];
+
 /**
  * 出退勤テーブルの見た目を整える。
  * Googleドキュメントの表は既定だと行間・セル余白が広めで間延びして
  * 見えるため、1件=1行にきっちり収まる密度に詰める。ヘッダー行は
- * 太字にする。
+ * 太字にする。列幅も内容に合わせて調整する。
+ *
+ * ※ 罫線を「横線だけ」にすることは、Apps Scriptの標準機能(DocumentApp)
+ * では表全体に対してしか罫線の太さ・色を指定できず、セルの上下左右を
+ * 個別に消すことができないため実現できない(Google Docs APIの拡張
+ * サービスを別途有効化すれば可能だが、今回はそこまでの規模ではない
+ * と判断し、罫線を細く・薄くする対応にとどめている)。
  */
 function formatAttendanceTable_(table) {
+  table.setBorderWidth(0.5);
+  table.setBorderColor('#cccccc');
+
+  for (var col = 0; col < ATTENDANCE_TABLE_COLUMN_WIDTHS.length; col++) {
+    table.setColumnWidth(col, ATTENDANCE_TABLE_COLUMN_WIDTHS[col]);
+  }
+
   for (var r = 0; r < table.getNumRows(); r++) {
     var row = table.getRow(r);
     for (var c = 0; c < row.getNumCells(); c++) {
