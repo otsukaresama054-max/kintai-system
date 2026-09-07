@@ -265,11 +265,7 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
       tableData.push([r.date, r.type, r.time, r.address]);
     });
     var table = body.appendTable(tableData);
-    // ヘッダー行を太字にする
-    var headerRow = table.getRow(0);
-    for (var c = 0; c < headerRow.getNumCells(); c++) {
-      headerRow.getCell(c).setBold(true);
-    }
+    formatAttendanceTable_(table);
   });
 
   doc.saveAndClose();
@@ -280,6 +276,33 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
   DriveApp.getFileById(doc.getId()).setTrashed(true);
 
   return pdfBlob;
+}
+
+/**
+ * 出退勤テーブルの見た目を整える。
+ * Googleドキュメントの表は既定だと行間・セル余白が広めで間延びして
+ * 見えるため、1件=1行にきっちり収まる密度に詰める。ヘッダー行は
+ * 太字にする。
+ */
+function formatAttendanceTable_(table) {
+  for (var r = 0; r < table.getNumRows(); r++) {
+    var row = table.getRow(r);
+    for (var c = 0; c < row.getNumCells(); c++) {
+      var cell = row.getCell(c);
+      cell.setPaddingTop(2).setPaddingBottom(2).setPaddingLeft(4).setPaddingRight(4);
+
+      for (var p = 0; p < cell.getNumChildren(); p++) {
+        var child = cell.getChild(p);
+        if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          child.asParagraph().setLineSpacing(1).setSpacingBefore(0).setSpacingAfter(0);
+        }
+      }
+
+      if (r === 0) {
+        cell.setBold(true);
+      }
+    }
+  }
 }
 
 function pad2Report_(n) {
