@@ -17,8 +17,38 @@
 var REPORT_ROOT_FOLDER_NAME = '勤怠PDF';
 
 /**
- * スプレッドシートを開いたときに呼ばれる(Apps Scriptの仕様上の名前)。
+ * 【最初に1回だけ実行する】
+ * このプロジェクトは「スプレッドシートに直接紐付いたスクリプト」ではなく
+ * 単独のApps Scriptプロジェクトとして作っているため、onOpen(スプレッド
+ * シートを開いたら自動で発火する仕組み)がそのままでは効かない。
+ * その代わりに、ここで「installable trigger」という形でオープンイベントを
+ * 明示的に登録する。実行後にスプレッドシートを開き直すと、上部メニューに
+ * 「勤怠帳票」が表示されるようになる。
+ *
+ * 関数選択のプルダウンでこの関数(setupMenuTrigger)を選んで▶実行し、
+ * 権限の承認を済ませればOK(以後この関数は再実行不要)。
+ */
+function setupMenuTrigger() {
+  // 二重登録を防ぐため、既存の同名トリガーは一旦削除してから作り直す。
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'onOpen') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger('onOpen')
+    .forSpreadsheet(getSpreadsheetId_())
+    .onOpen()
+    .create();
+
+  Logger.log('「勤怠帳票」メニューを表示するトリガーを設定しました。スプレッドシートを開き直して確認してください。');
+}
+
+/**
+ * スプレッドシートを開いたときに呼ばれる。
  * カスタムメニュー「勤怠帳票」を追加する。
+ * (単独プロジェクトのため、上の setupMenuTrigger() を先に1回
+ * 実行しておく必要がある)
  */
 function onOpen(e) {
   SpreadsheetApp.getUi()
