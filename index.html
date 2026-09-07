@@ -44,7 +44,7 @@
       background: linear-gradient(160deg, var(--brand-primary), var(--brand-secondary));
       color: #fff;
       text-align: center;
-      padding: 44px 12px 60px;
+      padding: 60px 12px 90px;
       flex-shrink: 0;
     }
 
@@ -56,7 +56,7 @@
       background: var(--brand-bg);
       border-radius: 28px 28px 0 0;
       margin-top: -32px;
-      padding: 40px 10px 26px;
+      padding: 60px 10px 40px;
       display: flex;
       flex-direction: column;
     }
@@ -75,7 +75,7 @@
       text-align: center;
     }
     #clockTime {
-      font-size: 100px;
+      font-size: 180px;
       font-weight: 700;
       color: var(--brand-text);
       letter-spacing: 0.01em;
@@ -83,14 +83,14 @@
       font-variant-numeric: tabular-nums;
     }
     #clockDate {
-      font-size: 60px;
+      font-size: 108px;
       color: #6b7c93;
-      margin-top: 12px;
+      margin-top: 20px;
       white-space: nowrap;
     }
 
     h1 {
-      font-size: 80px;
+      font-size: 144px;
       font-weight: 700;
       text-align: center;
       margin: 0;
@@ -101,44 +101,44 @@
     #userInfo {
       text-align: center;
       color: #5b6b82;
-      font-size: 40px;
-      margin-top: 20px;
-      min-height: 30px;
+      font-size: 72px;
+      margin-top: 34px;
+      min-height: 54px;
     }
     .topGroup {
-      margin-bottom: 44px;
+      margin-bottom: 79px;
     }
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 44px;
-      margin-bottom: 34px;
+      gap: 79px;
+      margin-bottom: 61px;
     }
 
     /* 退勤ボタンの下に置く、任意入力の「最終訪問先」欄。 */
     .lastVisitField {
-      margin-bottom: 30px;
+      margin-bottom: 54px;
     }
     .lastVisitField label {
       display: block;
-      font-size: 22px;
+      font-size: 40px;
       font-weight: 600;
       color: var(--brand-text);
-      margin-bottom: 10px;
+      margin-bottom: 18px;
     }
     .lastVisitField .optionalTag {
-      font-size: 16px;
+      font-size: 29px;
       font-weight: 400;
       color: #7a8aa0;
-      margin-left: 6px;
+      margin-left: 10px;
     }
     .lastVisitField input {
       width: 100%;
-      font-size: 24px;
+      font-size: 43px;
       font-family: inherit;
-      padding: 16px 18px;
+      padding: 29px 32px;
       border: 2px solid #c9d6e8;
-      border-radius: 14px;
+      border-radius: 25px;
       background: #fff;
       color: #222;
     }
@@ -150,12 +150,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      font-size: 70px;
+      gap: 36px;
+      font-size: 126px;
       font-weight: bold;
-      padding: 34px 0;
+      padding: 61px 0;
       border: none;
-      border-radius: 24px;
+      border-radius: 43px;
       color: #fff;
       cursor: pointer;
       letter-spacing: 0.06em;
@@ -171,8 +171,8 @@
       box-shadow: none;
     }
     button.punch svg {
-      width: 58px;
-      height: 58px;
+      width: 104px;
+      height: 104px;
       flex-shrink: 0;
     }
     #btnCheckIn { background: var(--brand-primary); }
@@ -184,7 +184,7 @@
     #status {
       text-align: center;
       color: var(--brand-text);
-      font-size: 40px;
+      font-size: 72px;
       font-weight: 600;
       line-height: 1.5;
       white-space: pre-wrap;
@@ -230,7 +230,7 @@
 
       <div class="lastVisitField">
         <label for="lastVisitInput">最終訪問先<span class="optionalTag">(任意)</span></label>
-        <input type="text" id="lastVisitInput" placeholder="例: ○○商事株式会社">
+        <input type="text" id="lastVisitInput" placeholder="例: ○○株式会社">
       </div>
 
       <div id="status">準備中です。しばらくお待ちください。</div>

@@ -151,9 +151,7 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
   values.forEach(function (row) {
     var timestamp = row[0];
     var name = row[1];
-    var dateStr = row[2];
     var type = row[3];
-    var time = row[4];
     var address = row[7];
     var userId = row[8];
 
@@ -161,15 +159,23 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
     if (!(timestamp instanceof Date)) return;
     if (timestamp < periodStart || timestamp > periodEnd) return;
 
+    // 日付・時刻の列は、スプレッドシート側で日付/時刻の値として自動認識
+    // され、文字列ではなくDateオブジェクトとして返ってくることがある
+    // (DocumentApp.appendTable は文字列の配列しか受け付けないため、
+    // ここで必ず文字列に変換しておく)。
+    var dateStr = cellToDateString_(row[2]);
+    var time = cellToTimeString_(row[4]);
+    var addressStr = address == null ? '' : String(address);
+
     var key = userId || name;
     if (!byEmployee[key]) {
-      byEmployee[key] = { name: name, rows: [] };
+      byEmployee[key] = { name: String(name), rows: [] };
     }
     byEmployee[key].rows.push({
       date: dateStr,
-      type: type,
+      type: String(type),
       time: time,
-      address: address,
+      address: addressStr,
     });
   });
 
@@ -232,6 +238,28 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
 
 function pad2Report_(n) {
   return n < 10 ? '0' + n : String(n);
+}
+
+/**
+ * Recordsシートの「日付」列の値を、必ず文字列(yyyy-MM-dd)にして返す。
+ * Sheets側でDate型として自動認識されている場合と、素の文字列の
+ * 場合の両方に対応する。
+ */
+function cellToDateString_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'Asia/Tokyo', 'yyyy-MM-dd');
+  }
+  return value == null ? '' : String(value);
+}
+
+/**
+ * Recordsシートの「時刻」列の値を、必ず文字列(HH:mm:ss)にして返す。
+ */
+function cellToTimeString_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, 'Asia/Tokyo', 'HH:mm:ss');
+  }
+  return value == null ? '' : String(value);
 }
 
 function formatDateJa_(date) {
