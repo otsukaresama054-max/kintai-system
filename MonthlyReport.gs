@@ -1,20 +1,28 @@
 /**
  * MonthlyReport.gs
  * ------------------------------------------------------------
- * 「20日締め」の月次勤怠を、社員ごとに1枚のPDFとして出力する機能。
+ * 「20日締め」の月次勤怠を、全社員分まとめた1つのPDFとして出力する機能。
  *
  * スプレッドシートを開いたときに追加される「勤怠帳票」メニューの
  * 「月次PDFを出力」から手動で実行する(自動実行やメール送信はしない。
- * 実行するとGoogleドライブにPDFが保存され、そこで完結する)。
+ * その場で開いて印刷する運用を想定しており、データを長期保管する
+ * 前提ではないため、同じ対象月を再出力すると古いファイルは自動で
+ * 上書き<削除>される)。
  *
  * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)」の
  * 一覧のみ。出勤/退勤をペアにした実働時間の自動計算は行わない
  * (中抜け等の運用は無い前提のため、単純な打刻一覧で十分としている)。
  * 「(拒否)」の区分(位置情報拒否の記録)はPDFには含めない。
+ *
+ * 実装上のポイント:
+ * 複数人分を1つのPDFにまとめるため、スプレッドシートではなく
+ * 一時的なGoogleドキュメントに社員ごとの表をページ区切りしながら
+ * 積み上げていき、最後にPDFへ変換している(Googleドキュメントは
+ * ページ区切りの制御やPDF変換がスプレッドシートより素直にできるため)。
  * ------------------------------------------------------------
  */
 
-var REPORT_ROOT_FOLDER_NAME = '勤怠PDF';
+var REPORT_FOLDER_NAME = '勤怠PDF';
 
 /**
  * 【最初に1回だけ実行する】
@@ -95,27 +103,31 @@ function generateMonthlyAttendancePdfs() {
     return;
   }
 
-  var folder = getOrCreateReportFolder_(year, month);
-  var count = 0;
-
-  employeeKeys.forEach(function (key) {
-    var employee = byEmployee[key];
-    // 日付→時刻の順で並べ替え(文字列比較でOKな形式にしてある)
-    employee.rows.sort(function (a, b) {
-      var aKey = a.date + ' ' + a.time;
-      var bKey = b.date + ' ' + b.time;
-      return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
-    });
-
-    var pdfBlob = buildAttendancePdf_(employee.name, year, month, periodStart, periodEnd, employee.rows);
-    folder.createFile(pdfBlob).setName(employee.name + '.pdf');
-    count++;
+  // 氏名の五十音(文字コード)順に並べる
+  employeeKeys.sort(function (a, b) {
+    return byEmployee[a].name < byEmployee[b].name ? -1 : byEmployee[a].name > byEmployee[b].name ? 1 : 0;
   });
 
+  var fileName = year + '年' + pad2Report_(month) + '月分_出退勤記録.pdf';
+  var pdfBlob = buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employeeKeys, byEmployee);
+  pdfBlob.setName(fileName);
+
+  var folder = getOrCreateReportFolder_();
+
+  // その場で印刷して使い切る運用のため、長期保管はしない。
+  // 同じ月を再出力した場合、前回分は自動的に削除して1件だけ残す。
+  var existing = folder.getFilesByName(fileName);
+  while (existing.hasNext()) {
+    existing.next().setTrashed(true);
+  }
+
+  var file = folder.createFile(pdfBlob);
+
   ui.alert(
-    '完了しました。' + count + '名分のPDFを出力しました。\n\n' +
-      '保存先フォルダ: ' + folder.getName() + '\n' +
-      folder.getUrl()
+    '完了しました。以下のリンクを開いて印刷してください。\n\n' +
+      file.getUrl() +
+      '\n\n※ 印刷し終わったら、このファイルはドライブから削除してもらって問題ありません' +
+      '(同じ月をもう一度出力すると自動的に上書きされます)。'
   );
 }
 
@@ -165,82 +177,66 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
 }
 
 /**
- * 「勤怠PDF」フォルダ(無ければ作成)の下に、対象月のサブフォルダを用意する。
- * @param {number} year
- * @param {number} month
+ * 「勤怠PDF」フォルダ(無ければ作成)を用意する。
  * @return {GoogleAppsScript.Drive.Folder}
  */
-function getOrCreateReportFolder_(year, month) {
-  var rootFolders = DriveApp.getFoldersByName(REPORT_ROOT_FOLDER_NAME);
-  var root = rootFolders.hasNext() ? rootFolders.next() : DriveApp.createFolder(REPORT_ROOT_FOLDER_NAME);
-
-  var subName = year + '年' + pad2Report_(month) + '月分';
-  var subFolders = root.getFoldersByName(subName);
-  return subFolders.hasNext() ? subFolders.next() : root.createFolder(subName);
+function getOrCreateReportFolder_() {
+  var folders = DriveApp.getFoldersByName(REPORT_FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(REPORT_FOLDER_NAME);
 }
 
 /**
- * 1人分の出退勤一覧を、見やすく整形したPDFのBlobとして生成する。
- * 実装としては「一時的なスプレッドシートに表を組んでPDFエクスポートし、
- * 一時スプレッドシートは削除する」という方法をとっている。
+ * 全社員分の出退勤一覧を、社員ごとにページを分けながら1つの
+ * Googleドキュメントにまとめ、PDFのBlobとして返す。
+ * (一時的に作成したドキュメントはPDF変換後に削除する)
  */
-function buildAttendancePdf_(name, year, month, periodStart, periodEnd, rows) {
-  var tmpSs = SpreadsheetApp.create(
-    '_tmp_勤怠帳票_' + name + '_' + new Date().getTime()
-  );
-  var sheet = tmpSs.getSheets()[0];
+function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employeeKeys, byEmployee) {
+  var doc = DocumentApp.create('_tmp_勤怠帳票_' + new Date().getTime());
+  var body = doc.getBody();
+  // 既定で入っている空段落は後で使うので保持しておく
 
-  var title =
-    name + ' 様 出退勤記録(' + year + '年' + pad2Report_(month) + '月分・' +
+  var periodLabel =
+    year + '年' + pad2Report_(month) + '月分(' +
     formatDateJa_(periodStart) + '〜' + formatDateJa_(periodEnd) + ')';
 
-  sheet.getRange(1, 1, 1, 4).merge();
-  sheet.getRange(1, 1).setValue(title).setFontWeight('bold').setFontSize(13);
+  employeeKeys.forEach(function (key, index) {
+    var employee = byEmployee[key];
 
-  var header = ['日付', '区分', '時刻', '位置情報(簡易)'];
-  sheet.getRange(3, 1, 1, header.length)
-    .setValues([header])
-    .setFontWeight('bold')
-    .setBackground('#eef3fb');
-
-  if (rows.length > 0) {
-    var tableValues = rows.map(function (r) {
-      return [r.date, r.type, r.time, r.address];
+    // 日付→時刻の順で並べ替え
+    var rows = employee.rows.slice().sort(function (a, b) {
+      var aKey = a.date + ' ' + a.time;
+      var bKey = b.date + ' ' + b.time;
+      return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
     });
-    sheet.getRange(4, 1, tableValues.length, 4).setValues(tableValues);
-  } else {
-    sheet.getRange(4, 1).setValue('(対象期間内の記録はありません)');
-  }
 
-  sheet.setColumnWidth(1, 100);
-  sheet.setColumnWidth(2, 70);
-  sheet.setColumnWidth(3, 80);
-  sheet.setColumnWidth(4, 280);
-  SpreadsheetApp.flush();
+    if (index > 0) {
+      body.appendPageBreak();
+    }
 
-  var pdfBlob = exportSheetAsPdf_(tmpSs.getId(), sheet.getSheetId());
+    body.appendParagraph(employee.name + ' 様').setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(periodLabel);
+    body.appendParagraph(''); // 表との間の余白
 
-  // 一時スプレッドシートはもう不要なのでゴミ箱に移動する。
-  DriveApp.getFileById(tmpSs.getId()).setTrashed(true);
-
-  return pdfBlob.setName(name + '.pdf');
-}
-
-/**
- * 指定スプレッドシート内の指定シートを、PDFのBlobとしてエクスポートする。
- */
-function exportSheetAsPdf_(spreadsheetId, sheetId) {
-  var url =
-    'https://docs.google.com/spreadsheets/d/' + spreadsheetId + '/export' +
-    '?format=pdf&gid=' + sheetId +
-    '&portrait=true&fitw=true&gridlines=false&printtitle=false' +
-    '&sheetnames=false&pagenumbers=false' +
-    '&top_margin=0.5&bottom_margin=0.5&left_margin=0.5&right_margin=0.5';
-
-  var response = UrlFetchApp.fetch(url, {
-    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    var tableData = [['日付', '区分', '時刻', '位置情報(簡易)']];
+    rows.forEach(function (r) {
+      tableData.push([r.date, r.type, r.time, r.address]);
+    });
+    var table = body.appendTable(tableData);
+    // ヘッダー行を太字にする
+    var headerRow = table.getRow(0);
+    for (var c = 0; c < headerRow.getNumCells(); c++) {
+      headerRow.getCell(c).setBold(true);
+    }
   });
-  return response.getBlob();
+
+  doc.saveAndClose();
+
+  var pdfBlob = DriveApp.getFileById(doc.getId()).getAs(MimeType.PDF);
+
+  // 一時ドキュメントはもう不要なのでゴミ箱に移動する。
+  DriveApp.getFileById(doc.getId()).setTrashed(true);
+
+  return pdfBlob;
 }
 
 function pad2Report_(n) {
