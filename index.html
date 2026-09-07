@@ -114,6 +114,38 @@
       gap: 44px;
       margin-bottom: 34px;
     }
+
+    /* 退勤ボタンの下に置く、任意入力の「最終訪問先」欄。 */
+    .lastVisitField {
+      margin-bottom: 30px;
+    }
+    .lastVisitField label {
+      display: block;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--brand-text);
+      margin-bottom: 10px;
+    }
+    .lastVisitField .optionalTag {
+      font-size: 16px;
+      font-weight: 400;
+      color: #7a8aa0;
+      margin-left: 6px;
+    }
+    .lastVisitField input {
+      width: 100%;
+      font-size: 24px;
+      font-family: inherit;
+      padding: 16px 18px;
+      border: 2px solid #c9d6e8;
+      border-radius: 14px;
+      background: #fff;
+      color: #222;
+    }
+    .lastVisitField input:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+    }
     button.punch {
       display: flex;
       align-items: center;
@@ -196,6 +228,11 @@
         </button>
       </div>
 
+      <div class="lastVisitField">
+        <label for="lastVisitInput">最終訪問先<span class="optionalTag">(任意)</span></label>
+        <input type="text" id="lastVisitInput" placeholder="例: ○○商事株式会社">
+      </div>
+
       <div id="status">準備中です。しばらくお待ちください。</div>
     </div>
   </div>
@@ -210,6 +247,7 @@
     var userInfoEl = document.getElementById('userInfo');
     var btnCheckIn = document.getElementById('btnCheckIn');
     var btnCheckOut = document.getElementById('btnCheckOut');
+    var lastVisitInput = document.getElementById('lastVisitInput');
     var clockTimeEl = document.getElementById('clockTime');
     var clockDateEl = document.getElementById('clockDate');
 
@@ -400,9 +438,18 @@
         return;
       }
 
-      postToServer({ idToken: idToken, type: type, lat: lat, lng: lng })
+      // 「最終訪問先」は退勤ボタンの下にある任意入力欄。出勤時は使わない。
+      var payload = { idToken: idToken, type: type, lat: lat, lng: lng };
+      if (type === '退勤' && lastVisitInput.value.trim()) {
+        payload.note = lastVisitInput.value.trim();
+      }
+
+      postToServer(payload)
         .then(function (result) {
           if (result.ok) {
+            if (type === '退勤') {
+              lastVisitInput.value = ''; // 送信できたら次回のために欄をクリアする
+            }
             setStatus(
               result.type + 'を記録しました。\n' +
                 result.date + ' ' + result.time + '\n' +

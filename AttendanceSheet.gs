@@ -52,6 +52,7 @@ function getAttendanceSheet_() {
  * @param {number} record.lng 経度
  * @param {string} record.address 住所(簡易)
  * @param {string} record.lineUserId LINE UserID
+ * @param {string} [record.note] 備考(「最終訪問先」など。任意)
  * @return {{date: string, time: string}} 記録した日付・時刻(通知メールで使う)
  */
 function appendAttendanceRecord_(record) {
@@ -68,7 +69,7 @@ function appendAttendanceRecord_(record) {
     record.lng, // G: 経度
     record.address, // H: 住所(簡易)
     record.lineUserId, // I: LINE UserID
-    '', // J: 備考
+    record.note || '', // J: 備考
   ]);
 
   return { date: n.date, time: n.time };

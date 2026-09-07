@@ -145,6 +145,10 @@ function handlePunch_(e) {
   // 3. 緯度経度から簡易住所を取得
   var address = reverseGeocodeToAddress_(lat, lng);
 
+  // 「最終訪問先」欄(退勤ボタンの下にある任意入力)。長すぎる入力は
+  // 念のため切り詰めておく。
+  var note = payload.note ? String(payload.note).trim().substring(0, 100) : '';
+
   // 4. スプレッドシートに記録
   var saved = appendAttendanceRecord_({
     name: employee.name,
@@ -153,6 +157,7 @@ function handlePunch_(e) {
     lng: lng,
     address: address,
     lineUserId: employee.lineUserId,
+    note: note,
   });
 
   // 5. 通知(メール等)を送信。通知処理の失敗で打刻自体は失敗させない。

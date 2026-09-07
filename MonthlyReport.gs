@@ -4,10 +4,10 @@
  * 「20日締め」の月次勤怠を、全社員分まとめた1つのPDFとして出力する機能。
  *
  * スプレッドシートを開いたときに追加される「勤怠帳票」メニューの
- * 「月次PDFを出力」から手動で実行する(自動実行やメール送信はしない。
- * その場で開いて印刷する運用を想定しており、データを長期保管する
- * 前提ではないため、同じ対象月を再出力すると古いファイルは自動で
- * 上書き<削除>される)。
+ * 「月次PDFを出力」から手動で実行する(自動実行やメール送信はしない)。
+ * 生成したPDFはGoogleドライブに保存せず、ポップアップ画面の中に
+ * 直接埋め込んで表示する(「その場で開いて印刷したら終わり、
+ * データはどこにも残さない」運用のため)。
  *
  * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)」の
  * 一覧のみ。出勤/退勤をペアにした実働時間の自動計算は行わない
@@ -21,8 +21,6 @@
  * ページ区切りの制御やPDF変換がスプレッドシートより素直にできるため)。
  * ------------------------------------------------------------
  */
-
-var REPORT_FOLDER_NAME = '勤怠PDF';
 
 /**
  * 【最初に1回だけ実行する】
@@ -108,27 +106,29 @@ function generateMonthlyAttendancePdfs() {
     return byEmployee[a].name < byEmployee[b].name ? -1 : byEmployee[a].name > byEmployee[b].name ? 1 : 0;
   });
 
-  var fileName = year + '年' + pad2Report_(month) + '月分_出退勤記録.pdf';
   var pdfBlob = buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employeeKeys, byEmployee);
-  pdfBlob.setName(fileName);
 
-  var folder = getOrCreateReportFolder_();
+  showPdfPreviewDialog_(pdfBlob, year, month);
+}
 
-  // その場で印刷して使い切る運用のため、長期保管はしない。
-  // 同じ月を再出力した場合、前回分は自動的に削除して1件だけ残す。
-  var existing = folder.getFilesByName(fileName);
-  while (existing.hasNext()) {
-    existing.next().setTrashed(true);
-  }
+/**
+ * 生成したPDFを、ドライブに保存せずポップアップ画面の中に直接埋め込んで
+ * 表示する。ダイアログを閉じれば何も残らない(印刷はブラウザのPDF
+ * ビューア上部に出るアイコンや、右クリック→印刷などで行う)。
+ */
+function showPdfPreviewDialog_(pdfBlob, year, month) {
+  var base64 = Utilities.base64Encode(pdfBlob.getBytes());
+  var titleText = year + '年' + pad2Report_(month) + '月分 出退勤記録';
 
-  var file = folder.createFile(pdfBlob);
+  var html =
+    '<div style="font-family:sans-serif;font-size:13px;margin-bottom:8px;">' +
+    '印刷が終わったら、このウィンドウを閉じてください。データはどこにも保存されません。' +
+    '</div>' +
+    '<embed src="data:application/pdf;base64,' + base64 + '" ' +
+    'type="application/pdf" style="width:100%;height:600px;border:1px solid #ccc;">';
 
-  ui.alert(
-    '完了しました。以下のリンクを開いて印刷してください。\n\n' +
-      file.getUrl() +
-      '\n\n※ 印刷し終わったら、このファイルはドライブから削除してもらって問題ありません' +
-      '(同じ月をもう一度出力すると自動的に上書きされます)。'
-  );
+  var output = HtmlService.createHtmlOutput(html).setWidth(900).setHeight(680);
+  SpreadsheetApp.getUi().showModalDialog(output, titleText);
 }
 
 /**
@@ -174,15 +174,6 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
   });
 
   return byEmployee;
-}
-
-/**
- * 「勤怠PDF」フォルダ(無ければ作成)を用意する。
- * @return {GoogleAppsScript.Drive.Folder}
- */
-function getOrCreateReportFolder_() {
-  var folders = DriveApp.getFoldersByName(REPORT_FOLDER_NAME);
-  return folders.hasNext() ? folders.next() : DriveApp.createFolder(REPORT_FOLDER_NAME);
 }
 
 /**
