@@ -5,9 +5,11 @@
  *
  * スプレッドシートを開いたときに追加される「勤怠帳票」メニューの
  * 「月次PDFを出力」から手動で実行する(自動実行やメール送信はしない)。
- * 生成したPDFはGoogleドライブに保存せず、ポップアップ画面の中に
- * 直接埋め込んで表示する(「その場で開いて印刷したら終わり、
- * データはどこにも残さない」運用のため)。
+ *
+ * 生成したPDFは、指定した時間だけGoogleドライブに置いて自動削除する
+ * ようにしている。当初は「ドライブに保存せずポップアップ画面へ直接
+ * 埋め込んで表示する」実装にしていたが、Googleのダイアログの
+ * セキュリティ制限でPDFデータが表示できず(真っ白になる)ボツにした。
  *
  * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)」の
  * 一覧のみ。出勤/退勤をペアにした実働時間の自動計算は行わない
@@ -21,6 +23,9 @@
  * ページ区切りの制御やPDF変換がスプレッドシートより素直にできるため)。
  * ------------------------------------------------------------
  */
+
+var REPORT_FOLDER_NAME = '勤怠PDF';
+var TEMP_REPORT_LIFETIME_MS = 15 * 60 * 1000; // 15分後に自動削除
 
 /**
  * 【最初に1回だけ実行する】
@@ -107,28 +112,69 @@ function generateMonthlyAttendancePdfs() {
   });
 
   var pdfBlob = buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employeeKeys, byEmployee);
+  pdfBlob.setName(year + '年' + pad2Report_(month) + '月分_出退勤記録.pdf');
 
-  showPdfPreviewDialog_(pdfBlob, year, month);
+  // 前回出しっぱなしのファイル・自動削除トリガーが残っていれば先に片付ける
+  cleanupTempReportFile_();
+
+  var folder = getOrCreateReportFolder_();
+  var file = folder.createFile(pdfBlob);
+
+  // 指定時間後に自動でこのファイルを削除するトリガーを仕込む。
+  // (ポップアップ内に直接PDFを埋め込む方式は、Googleのダイアログの
+  // セキュリティ制限で真っ白になってしまい表示できなかったため、
+  // 代わりに「短時間だけドライブに置いて自動削除する」方式にしている)
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('TEMP_REPORT_FILE_ID', file.getId());
+  var trigger = ScriptApp.newTrigger('cleanupTempReportFile_')
+    .timeBased()
+    .after(TEMP_REPORT_LIFETIME_MS)
+    .create();
+  props.setProperty('TEMP_REPORT_TRIGGER_ID', trigger.getUniqueId());
+
+  ui.alert(
+    '完了しました。以下のリンクを開いて印刷してください。\n\n' +
+      file.getUrl() +
+      '\n\nこのファイルは' + (TEMP_REPORT_LIFETIME_MS / 60000) + '分後に自動的に削除されます。' +
+      '印刷が終わったら、そのまま閉じてもらって問題ありません。'
+  );
 }
 
 /**
- * 生成したPDFを、ドライブに保存せずポップアップ画面の中に直接埋め込んで
- * 表示する。ダイアログを閉じれば何も残らない(印刷はブラウザのPDF
- * ビューア上部に出るアイコンや、右クリック→印刷などで行う)。
+ * 「勤怠PDF」フォルダ(無ければ作成)を用意する。
+ * @return {GoogleAppsScript.Drive.Folder}
  */
-function showPdfPreviewDialog_(pdfBlob, year, month) {
-  var base64 = Utilities.base64Encode(pdfBlob.getBytes());
-  var titleText = year + '年' + pad2Report_(month) + '月分 出退勤記録';
+function getOrCreateReportFolder_() {
+  var folders = DriveApp.getFoldersByName(REPORT_FOLDER_NAME);
+  return folders.hasNext() ? folders.next() : DriveApp.createFolder(REPORT_FOLDER_NAME);
+}
 
-  var html =
-    '<div style="font-family:sans-serif;font-size:13px;margin-bottom:8px;">' +
-    '印刷が終わったら、このウィンドウを閉じてください。データはどこにも保存されません。' +
-    '</div>' +
-    '<embed src="data:application/pdf;base64,' + base64 + '" ' +
-    'type="application/pdf" style="width:100%;height:600px;border:1px solid #ccc;">';
+/**
+ * 直近に出力した一時PDF(と、その削除トリガー)を片付ける。
+ * 自動削除トリガーから呼ばれるほか、次回出力時の前始末としても使う。
+ */
+function cleanupTempReportFile_() {
+  var props = PropertiesService.getScriptProperties();
 
-  var output = HtmlService.createHtmlOutput(html).setWidth(900).setHeight(680);
-  SpreadsheetApp.getUi().showModalDialog(output, titleText);
+  var fileId = props.getProperty('TEMP_REPORT_FILE_ID');
+  if (fileId) {
+    try {
+      DriveApp.getFileById(fileId).setTrashed(true);
+    } catch (e) {
+      // 既に削除済み・アクセス不可などは無視してよい
+    }
+    props.deleteProperty('TEMP_REPORT_FILE_ID');
+  }
+
+  var triggerId = props.getProperty('TEMP_REPORT_TRIGGER_ID');
+  if (triggerId) {
+    ScriptApp.getProjectTriggers().forEach(function (t) {
+      if (t.getUniqueId() === triggerId) {
+        ScriptApp.deleteTrigger(t);
+      }
+    });
+    props.deleteProperty('TEMP_REPORT_TRIGGER_ID');
+  }
 }
 
 /**
