@@ -18,10 +18,11 @@
   <style>
     * { box-sizing: border-box; }
 
-    /* 会社のテーマカラー(ブルー系)。ここの3色を変えるだけで全体の色味を調整できる。 */
+    /* 会社のテーマカラー(ブルー系)。ここの色を変えるだけで全体の色味を調整できる。 */
     :root {
-      --brand-primary: #1d4ed8;   /* 出勤ボタンの色(明るめの青) */
-      --brand-secondary: #1e3a5f; /* 退勤ボタンの色(濃紺) */
+      --brand-primary: #1d4ed8;   /* 出勤ボタンの色・ヘッダーグラデーション開始色(明るめの青) */
+      --brand-secondary: #1e3a5f; /* ヘッダーグラデーション終了色(濃紺) */
+      --brand-checkout: #d9707c;  /* 退勤ボタンの色(リッチメニューに合わせた珊瑚色) */
       --brand-bg: #eef3fb;        /* 背景の薄い青 */
       --brand-text: #1e2a3a;      /* 見出しの濃い青系テキスト */
     }
@@ -181,7 +182,7 @@
       flex-shrink: 0;
     }
     #btnCheckIn { background: var(--brand-primary); }
-    #btnCheckOut { background: var(--brand-secondary); }
+    #btnCheckOut { background: var(--brand-checkout); }
 
     /* 位置情報の案内・打刻結果の表示。以前は白背景の箱で囲っていたが、
        他の要素と合わせてフレームを撤廃し、文字だけをシート上に
