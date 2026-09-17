@@ -47,3 +47,31 @@ function findEmployeeByLineUserId_(lineUserId) {
   }
   return null;
 }
+
+/**
+ * 「有効」になっている社員(LINE UserID・氏名)を一覧で返す。
+ * 始業・終業リマインド(Reminder.gs)で、送信対象を絞り込むのに使う。
+ *
+ * @return {Array<{lineUserId: string, name: string}>}
+ */
+function getActiveEmployees_() {
+  var sheet = getSpreadsheet_().getSheetByName(CONFIG.SHEET_NAME_EMPLOYEES);
+  if (!sheet) {
+    throw new Error('シート "' + CONFIG.SHEET_NAME_EMPLOYEES + '" が見つかりません。');
+  }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  var result = [];
+  for (var i = 0; i < values.length; i++) {
+    var row = values[i];
+    var lineUserId = String(row[0]).trim();
+    var status = String(row[3]).trim();
+    if (lineUserId && status === '有効') {
+      result.push({ lineUserId: lineUserId, name: String(row[1]).trim() });
+    }
+  }
+  return result;
+}

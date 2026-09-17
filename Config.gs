@@ -11,6 +11,9 @@
  *   LINE_CHANNEL_ID      : LIFFを追加した「LINEログインチャネル」のChannel ID
  *                          (Messaging API用チャネルのIDとは別物なので注意)
  *   LINE_CHANNEL_SECRET  : 上記チャネルのChannel Secret
+ *   LINE_CHANNEL_ACCESS_TOKEN : Messaging API用チャネルの
+ *                          「チャネルアクセストークン(長期)」
+ *                          (始業・終業リマインドのpush送信に使用)
  *   SPREADSHEET_ID       : 記録先スプレッドシートのID
  *   NOTIFY_EMAILS        : 通知先メールアドレス(カンマ区切りで複数可)
  *
@@ -23,6 +26,7 @@
 var CONFIG = {
   SHEET_NAME_ATTENDANCE: 'Records', // 実際の出退勤記録シートのシート名
   SHEET_NAME_EMPLOYEES: 'Employees', // 実際の社員マスタシートのシート名
+  SHEET_NAME_HOLIDAYS: '会社休日', // 出退勤リマインドをスキップする日付の一覧シート名
 };
 
 /**
@@ -52,6 +56,16 @@ function getLineChannelSecret_() {
   // 現時点ではidToken検証には未使用だが、将来Messaging APIでの
   // 通知送信などに使う可能性があるため取得関数を用意しておく。
   return getScriptProperty_('LINE_CHANNEL_SECRET', false);
+}
+
+/**
+ * Messaging API(push送信)用のチャネルアクセストークン。
+ * 始業・終業リマインド(Reminder.gs)で使用する。
+ * LINE Developers > Messaging API用チャネル > 「Messaging API設定」タブの
+ * 「チャネルアクセストークン(長期)」を発行してここに設定する。
+ */
+function getLineChannelAccessToken_() {
+  return getScriptProperty_('LINE_CHANNEL_ACCESS_TOKEN', false);
 }
 
 function getSpreadsheetId_() {

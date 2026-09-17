@@ -33,6 +33,8 @@ function setupSheets() {
     '有効/無効',
   ]);
 
+  ensureSheetWithHeader_(ss, CONFIG.SHEET_NAME_HOLIDAYS, ['日付', '備考(任意)']);
+
   Logger.log('セットアップが完了しました。');
 }
 
