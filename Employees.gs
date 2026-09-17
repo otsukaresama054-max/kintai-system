@@ -10,6 +10,10 @@
  *   B: 氏名
  *   C: 通知先メール(任意・個別追加用)
  *   D: 有効/無効 ("有効" のときだけ打刻を許可する)
+ *   E: リマインド対象(任意。"対象" と入力した人だけ始業・終業リマインドが届く。
+ *      空欄の人には送らない。Reminder.gs 参照。E列は後から追加した列のため、
+ *      既存のスプレッドシートを使っている場合はE1セルに手動で
+ *      「リマインド対象」と入力しておくこと)
  * ------------------------------------------------------------
  */
 
@@ -49,12 +53,15 @@ function findEmployeeByLineUserId_(lineUserId) {
 }
 
 /**
- * 「有効」になっている社員(LINE UserID・氏名)を一覧で返す。
- * 始業・終業リマインド(Reminder.gs)で、送信対象を絞り込むのに使う。
+ * 「有効」かつ「リマインド対象」になっている社員(LINE UserID・氏名)を
+ * 一覧で返す。始業・終業リマインド(Reminder.gs)の送信対象の絞り込みに使う。
+ *
+ * E列(リマインド対象)は、"対象" と入力されている人だけが対象になる。
+ * 空欄の人には送らない(段階的に対象を増やしていける運用を想定)。
  *
  * @return {Array<{lineUserId: string, name: string}>}
  */
-function getActiveEmployees_() {
+function getReminderTargetEmployees_() {
   var sheet = getSpreadsheet_().getSheetByName(CONFIG.SHEET_NAME_EMPLOYEES);
   if (!sheet) {
     throw new Error('シート "' + CONFIG.SHEET_NAME_EMPLOYEES + '" が見つかりません。');
@@ -63,13 +70,14 @@ function getActiveEmployees_() {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  var values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
   var result = [];
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
     var lineUserId = String(row[0]).trim();
     var status = String(row[3]).trim();
-    if (lineUserId && status === '有効') {
+    var reminderTarget = String(row[4]).trim();
+    if (lineUserId && status === '有効' && reminderTarget === '対象') {
       result.push({ lineUserId: lineUserId, name: String(row[1]).trim() });
     }
   }

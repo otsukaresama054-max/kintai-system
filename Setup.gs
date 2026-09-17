@@ -31,6 +31,7 @@ function setupSheets() {
     '氏名',
     '通知先メール(任意)',
     '有効/無効',
+    'リマインド対象',
   ]);
 
   ensureSheetWithHeader_(ss, CONFIG.SHEET_NAME_HOLIDAYS, ['日付', '備考(任意)']);

@@ -14,9 +14,11 @@
  *     (祝日・年末年始・夏季休暇など、会社の休みを自由に追加できる。
  *      A列に日付を1行ずつ入力するだけでよい)
  * 送信対象:
- *   ・Employeesシートで「有効」になっている社員のうち、
- *     その日まだ該当区分(出勤/退勤)の打刻がない人だけ
+ *   ・Employeesシートで「有効」かつ「リマインド対象」(E列に"対象"と入力)に
+ *     なっている社員のうち、その日まだ該当区分(出勤/退勤)の打刻がない人だけ
  *     (すでに打刻済みの人には送らない)
+ *     ※ E列が空欄の人には送られない。最初は一部の社員だけ"対象"にしておき、
+ *       運用を広げるタイミングでE列を埋めていく、という使い方を想定している。
  *
  * 送信には、Messaging API用チャネルの「チャネルアクセストークン(長期)」
  * が必要。LINE Developers > 対象チャネル > Messaging API設定 タブで発行し、
@@ -62,9 +64,9 @@ function sendAttendanceReminder_(type, message) {
     return;
   }
 
-  var employees = getActiveEmployees_();
+  var employees = getReminderTargetEmployees_();
   if (employees.length === 0) {
-    console.log('有効な社員が登録されていないため、' + type + 'リマインドは送信しませんでした。');
+    console.log('リマインド対象の社員が登録されていないため、' + type + 'リマインドは送信しませんでした。');
     return;
   }
 
