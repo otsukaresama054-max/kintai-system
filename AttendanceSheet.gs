@@ -13,11 +13,16 @@
  *   G: 経度
  *   H: 住所(簡易)
  *   I: LINE UserID
- *   J: 備考
+ *   J: 備考(「最終訪問先」、または拒否レコードの場合は拒否・失敗の理由)
+ *   K: コメント(出勤・退勤どちらでも使える自由記入の備考欄)
  *
  * 位置情報の利用を拒否された(または取得に失敗した)場合は、実際の
  * 打刻は行わず、区分に「(拒否)」を付けた行として事実だけを記録する
  * (appendLocationDeniedRecord_)。集計時はこの区分を除外すればよい。
+ *
+ * ※ K列(コメント)は後から追加した列のため、既存のスプレッドシートを
+ * 使っている場合はK1セルに手動で「コメント」と入力しておくこと
+ * (setupSheetsは既存シートには手を加えないため)。
  * ------------------------------------------------------------
  */
 
@@ -53,6 +58,7 @@ function getAttendanceSheet_() {
  * @param {string} record.address 住所(簡易)
  * @param {string} record.lineUserId LINE UserID
  * @param {string} [record.note] 備考(「最終訪問先」など。任意)
+ * @param {string} [record.remarks] コメント(自由記入の備考欄。任意)
  * @return {{date: string, time: string}} 記録した日付・時刻(通知メールで使う)
  */
 function appendAttendanceRecord_(record) {
@@ -70,6 +76,7 @@ function appendAttendanceRecord_(record) {
     record.address, // H: 住所(簡易)
     record.lineUserId, // I: LINE UserID
     record.note || '', // J: 備考
+    record.remarks || '', // K: コメント
   ]);
 
   return { date: n.date, time: n.time };

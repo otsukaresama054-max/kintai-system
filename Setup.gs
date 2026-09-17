@@ -23,6 +23,7 @@ function setupSheets() {
     '住所(簡易)',
     'LINE UserID',
     '備考',
+    'コメント',
   ]);
 
   ensureSheetWithHeader_(ss, CONFIG.SHEET_NAME_EMPLOYEES, [

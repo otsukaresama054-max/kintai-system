@@ -11,10 +11,11 @@
  * 埋め込んで表示する」実装にしていたが、Googleのダイアログの
  * セキュリティ制限でPDFデータが表示できず(真っ白になる)ボツにした。
  *
- * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)」の
- * 一覧のみ。出勤/退勤をペアにした実働時間の自動計算は行わない
- * (中抜け等の運用は無い前提のため、単純な打刻一覧で十分としている)。
- * 「(拒否)」の区分(位置情報拒否の記録)はPDFには含めない。
+ * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)・
+ * 最終訪問先・備考」の一覧のみ。出勤/退勤をペアにした実働時間の
+ * 自動計算は行わない(中抜け等の運用は無い前提のため、単純な打刻
+ * 一覧で十分としている)。「(拒否)」の区分(位置情報拒否の記録)は
+ * PDFには含めない。
  *
  * 実装上のポイント:
  * 複数人分を1つのPDFにまとめるため、スプレッドシートではなく
@@ -191,8 +192,9 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
   var byEmployee = {};
   if (lastRow < 2) return byEmployee;
 
-  // A:タイムスタンプ B:氏名 C:日付 D:区分 E:時刻 F:緯度 G:経度 H:住所 I:LINE UserID J:備考
-  var values = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+  // A:タイムスタンプ B:氏名 C:日付 D:区分 E:時刻 F:緯度 G:経度 H:住所
+  // I:LINE UserID J:備考(最終訪問先) K:コメント
+  var values = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
 
   values.forEach(function (row) {
     var timestamp = row[0];
@@ -200,6 +202,8 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
     var type = row[3];
     var address = row[7];
     var userId = row[8];
+    var lastVisit = row[9];
+    var comment = row[10];
 
     if (type !== '出勤' && type !== '退勤') return; // 「(拒否)」等は除外
     if (!(timestamp instanceof Date)) return;
@@ -222,6 +226,8 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
       type: String(type),
       time: time,
       address: addressStr,
+      lastVisit: lastVisit == null ? '' : String(lastVisit),
+      comment: comment == null ? '' : String(comment),
     });
   });
 
@@ -236,6 +242,8 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
 function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employeeKeys, byEmployee) {
   var doc = DocumentApp.create('_tmp_勤怠帳票_' + new Date().getTime());
   var body = doc.getBody();
+  // 列が増えた分の横幅を確保するため、既定より左右の余白を狭くしておく。
+  body.setMarginLeft(40).setMarginRight(40);
   // 既定で入っている空段落は後で使うので保持しておく
 
   var periodLabel =
@@ -260,9 +268,9 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
     body.appendParagraph(periodLabel);
     body.appendParagraph(''); // 表との間の余白
 
-    var tableData = [['日付', '区分', '時刻', '位置情報(簡易)']];
+    var tableData = [['日付', '区分', '時刻', '位置情報(簡易)', '最終訪問先', '備考']];
     rows.forEach(function (r) {
-      tableData.push([r.date, r.type, r.time, r.address]);
+      tableData.push([r.date, r.type, r.time, r.address, r.lastVisit, r.comment]);
     });
     var table = body.appendTable(tableData);
     formatAttendanceTable_(table);
@@ -278,10 +286,10 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
   return pdfBlob;
 }
 
-// 表の列幅(ポイント数)。列: 日付・区分・時刻・位置情報(簡易)。
-// 「位置情報」が折り返して何行にもなってしまわないよう、他の列を
-// 詰めてその分を位置情報に多く配分している。
-var ATTENDANCE_TABLE_COLUMN_WIDTHS = [80, 40, 60, 280];
+// 表の列幅(ポイント数)。列: 日付・区分・時刻・位置情報(簡易)・
+// 最終訪問先・備考。「位置情報」が折り返して何行にもなってしまわない
+// よう、日付・区分・時刻はできるだけ詰めている。
+var ATTENDANCE_TABLE_COLUMN_WIDTHS = [70, 36, 55, 175, 90, 90];
 
 /**
  * 出退勤テーブルの見た目を整える。
