@@ -12,10 +12,10 @@
  * セキュリティ制限でPDFデータが表示できず(真っ白になる)ボツにした。
  *
  * PDFの中身は「日付・区分(出勤/退勤)・時刻・位置情報(簡易)・
- * 最終訪問先・備考」の一覧のみ。出勤/退勤をペアにした実働時間の
- * 自動計算は行わない(中抜け等の運用は無い前提のため、単純な打刻
- * 一覧で十分としている)。「(拒否)」の区分(位置情報拒否の記録)は
- * PDFには含めない。
+ * 訪問先(出勤時は「訪問先」、退勤時は「最終訪問先」の内容)・備考」の
+ * 一覧のみ。出勤/退勤をペアにした実働時間の自動計算は行わない
+ * (中抜け等の運用は無い前提のため、単純な打刻一覧で十分としている)。
+ * 「(拒否)」の区分(位置情報拒否の記録)はPDFには含めない。
  *
  * 実装上のポイント:
  * 複数人分を1つのPDFにまとめるため、スプレッドシートではなく
@@ -193,7 +193,7 @@ function collectAttendanceByEmployee_(periodStart, periodEnd) {
   if (lastRow < 2) return byEmployee;
 
   // A:タイムスタンプ B:氏名 C:日付 D:区分 E:時刻 F:緯度 G:経度 H:住所
-  // I:LINE UserID J:備考(最終訪問先) K:コメント
+  // I:LINE UserID J:備考(訪問先/最終訪問先) K:コメント
   var values = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
 
   values.forEach(function (row) {
@@ -268,7 +268,7 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
     body.appendParagraph(periodLabel);
     body.appendParagraph(''); // 表との間の余白
 
-    var tableData = [['日付', '区分', '時刻', '位置情報(簡易)', '最終訪問先', '備考']];
+    var tableData = [['日付', '区分', '時刻', '位置情報(簡易)', '訪問先', '備考']];
     rows.forEach(function (r) {
       tableData.push([r.date, r.type, r.time, r.address, r.lastVisit, r.comment]);
     });
@@ -287,7 +287,7 @@ function buildCombinedAttendancePdf_(year, month, periodStart, periodEnd, employ
 }
 
 // 表の列幅(ポイント数)。列: 日付・区分・時刻・位置情報(簡易)・
-// 最終訪問先・備考。「位置情報」が折り返して何行にもなってしまわない
+// 訪問先・備考。「位置情報」が折り返して何行にもなってしまわない
 // よう、日付・区分・時刻はできるだけ詰めている。
 var ATTENDANCE_TABLE_COLUMN_WIDTHS = [70, 36, 55, 175, 90, 90];
 

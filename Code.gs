@@ -145,7 +145,7 @@ function handlePunch_(e) {
   // 3. 緯度経度から簡易住所を取得
   var address = reverseGeocodeToAddress_(lat, lng);
 
-  // 「最終訪問先」欄(退勤ボタンの下にある任意入力)と「備考」欄
+  // 「訪問先」(出勤時)/「最終訪問先」(退勤時)と「備考」欄
   // (出勤・退勤どちらでも使える任意入力)。長すぎる入力は念のため
   // 切り詰めておく。
   var note = payload.note ? String(payload.note).trim().substring(0, 100) : '';

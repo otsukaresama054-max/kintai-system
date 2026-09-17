@@ -26,7 +26,7 @@
  * @param {string} record.time 時刻 (HH:mm:ss)
  * @param {string} record.address 住所(簡易)
  * @param {string} [record.employeeEmail] 社員マスタに登録された個別通知先(任意)
- * @param {string} [record.note] 最終訪問先(退勤時の任意入力。あれば通知に含める)
+ * @param {string} [record.note] 訪問先/最終訪問先(出勤・退勤それぞれの任意入力。あれば通知に含める)
  * @param {string} [record.remarks] 備考(自由記入の任意入力。あれば通知に含める)
  */
 function notifyAttendance_(record) {
@@ -65,9 +65,11 @@ function notifyViaEmail_(record) {
     '時刻  : ' + record.time,
     '位置  : ' + record.address,
   ];
-  // 「最終訪問先」「備考」は入力があったときだけメールに載せる。
+  // 「訪問先」(出勤)/「最終訪問先」(退勤)、「備考」は
+  // 入力があったときだけメールに載せる。
   if (record.note) {
-    bodyLines.push('最終訪問先: ' + record.note);
+    var visitLabel = record.type === '出勤' ? '訪問先' : '最終訪問先';
+    bodyLines.push(visitLabel + ': ' + record.note);
   }
   if (record.remarks) {
     bodyLines.push('備考  : ' + record.remarks);

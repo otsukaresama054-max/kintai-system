@@ -115,25 +115,31 @@
       margin-bottom: 34px;
     }
 
-    /* 退勤ボタンの下に置く、任意入力の「最終訪問先」欄と、
-       その下に置く任意入力の「備考」欄。見た目は共通にしている。 */
-    .lastVisitField, .remarksField {
+    /* 出勤ボタン+訪問先欄、退勤ボタン+最終訪問先欄、をそれぞれ
+       まとめる箱。?mode=checkin/checkout に応じてどちらか一方だけ
+       表示する(JS側で display を切り替える)。 */
+    .punchGroup {
       margin-bottom: 54px;
     }
-    .lastVisitField label, .remarksField label {
+
+    /* 「訪問先」「最終訪問先」「備考」、いずれも見た目は共通にしている。 */
+    .remarksField {
+      margin-bottom: 54px;
+    }
+    .visitField label, .remarksField label {
       display: block;
       font-size: 40px;
       font-weight: 600;
       color: var(--brand-text);
       margin-bottom: 18px;
     }
-    .lastVisitField .optionalTag, .remarksField .optionalTag {
+    .visitField .optionalTag, .remarksField .optionalTag {
       font-size: 29px;
       font-weight: 400;
       color: #7a8aa0;
       margin-left: 10px;
     }
-    .lastVisitField input, .remarksField textarea {
+    .visitField input, .remarksField textarea {
       width: 100%;
       font-size: 43px;
       font-family: inherit;
@@ -147,7 +153,7 @@
       resize: vertical;
       line-height: 1.4;
     }
-    .lastVisitField input:focus, .remarksField textarea:focus {
+    .visitField input:focus, .remarksField textarea:focus {
       outline: none;
       border-color: var(--brand-primary);
     }
@@ -214,28 +220,40 @@
         <div id="userInfo">読み込み中...</div>
       </div>
 
-      <div class="buttons">
-        <button id="btnCheckIn" class="punch">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-            <polyline points="10 17 15 12 10 7"></polyline>
-            <line x1="15" y1="12" x2="3" y2="12"></line>
-          </svg>
-          出　勤
-        </button>
-        <button id="btnCheckOut" class="punch">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-          退　勤
-        </button>
+      <!-- 出勤用の画面(?mode=checkin で開いた場合はここだけ表示) -->
+      <div class="punchGroup" id="checkinGroup">
+        <div class="buttons">
+          <button id="btnCheckIn" class="punch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            出　勤
+          </button>
+        </div>
+        <div class="visitField">
+          <label for="checkinVisitInput">訪問先<span class="optionalTag">(任意)</span></label>
+          <input type="text" id="checkinVisitInput">
+        </div>
       </div>
 
-      <div class="lastVisitField">
-        <label for="lastVisitInput">最終訪問先<span class="optionalTag">(任意)</span></label>
-        <input type="text" id="lastVisitInput" placeholder="例: ○○株式会社">
+      <!-- 退勤用の画面(?mode=checkout で開いた場合はここだけ表示) -->
+      <div class="punchGroup" id="checkoutGroup">
+        <div class="buttons">
+          <button id="btnCheckOut" class="punch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            退　勤
+          </button>
+        </div>
+        <div class="visitField">
+          <label for="checkoutVisitInput">最終訪問先<span class="optionalTag">(任意)</span></label>
+          <input type="text" id="checkoutVisitInput">
+        </div>
       </div>
 
       <div class="remarksField">
@@ -257,12 +275,26 @@
     var userInfoEl = document.getElementById('userInfo');
     var btnCheckIn = document.getElementById('btnCheckIn');
     var btnCheckOut = document.getElementById('btnCheckOut');
-    var lastVisitInput = document.getElementById('lastVisitInput');
+    var checkinVisitInput = document.getElementById('checkinVisitInput');
+    var checkoutVisitInput = document.getElementById('checkoutVisitInput');
     var remarksInput = document.getElementById('remarksInput');
+    var checkinGroup = document.getElementById('checkinGroup');
+    var checkoutGroup = document.getElementById('checkoutGroup');
     var clockTimeEl = document.getElementById('clockTime');
     var clockDateEl = document.getElementById('clockDate');
 
     var WEEKDAY_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+    // リッチメニューを「出勤用」「退勤用」の2つに分けて、それぞれ
+    // ?mode=checkin / ?mode=checkout を付けたURLを開かせる想定。
+    // modeが無い場合(直接LIFFのURLを開いた場合など)は、これまで通り
+    // 両方のボタンを表示しておく(フォールバック)。
+    var urlMode = new URLSearchParams(location.search).get('mode');
+    if (urlMode === 'checkin') {
+      checkoutGroup.style.display = 'none';
+    } else if (urlMode === 'checkout') {
+      checkinGroup.style.display = 'none';
+    }
 
     function pad2_(n) {
       return n < 10 ? '0' + n : String(n);
@@ -449,11 +481,12 @@
         return;
       }
 
-      // 「最終訪問先」は退勤ボタンの下にある任意入力欄。出勤時は使わない。
-      // 「備考」は出勤・退勤どちらでも使える任意入力欄。
+      // 「訪問先」(出勤)/「最終訪問先」(退勤)は、それぞれのボタンに
+      // 付随する任意入力欄。「備考」は出勤・退勤どちらでも使える任意入力欄。
+      var visitInput = type === '出勤' ? checkinVisitInput : checkoutVisitInput;
       var payload = { idToken: idToken, type: type, lat: lat, lng: lng };
-      if (type === '退勤' && lastVisitInput.value.trim()) {
-        payload.note = lastVisitInput.value.trim();
+      if (visitInput.value.trim()) {
+        payload.note = visitInput.value.trim();
       }
       if (remarksInput.value.trim()) {
         payload.remarks = remarksInput.value.trim();
@@ -462,9 +495,7 @@
       postToServer(payload)
         .then(function (result) {
           if (result.ok) {
-            if (type === '退勤') {
-              lastVisitInput.value = ''; // 送信できたら次回のために欄をクリアする
-            }
+            visitInput.value = ''; // 送信できたら次回のために欄をクリアする
             remarksInput.value = '';
             setStatus(
               result.type + 'を記録しました。\n' +

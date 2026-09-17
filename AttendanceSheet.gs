@@ -13,7 +13,8 @@
  *   G: 経度
  *   H: 住所(簡易)
  *   I: LINE UserID
- *   J: 備考(「最終訪問先」、または拒否レコードの場合は拒否・失敗の理由)
+ *   J: 備考(出勤時は「訪問先」、退勤時は「最終訪問先」。拒否レコードの
+ *      場合は拒否・失敗の理由)
  *   K: コメント(出勤・退勤どちらでも使える自由記入の備考欄)
  *
  * 位置情報の利用を拒否された(または取得に失敗した)場合は、実際の
@@ -57,7 +58,7 @@ function getAttendanceSheet_() {
  * @param {number} record.lng 経度
  * @param {string} record.address 住所(簡易)
  * @param {string} record.lineUserId LINE UserID
- * @param {string} [record.note] 備考(「最終訪問先」など。任意)
+ * @param {string} [record.note] 備考(「訪問先」「最終訪問先」など。任意)
  * @param {string} [record.remarks] コメント(自由記入の備考欄。任意)
  * @return {{date: string, time: string}} 記録した日付・時刻(通知メールで使う)
  */
