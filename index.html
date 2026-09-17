@@ -112,19 +112,19 @@
       display: flex;
       flex-direction: column;
       gap: 44px;
-      margin-bottom: 34px;
     }
 
-    /* 出勤ボタン+訪問先欄、退勤ボタン+最終訪問先欄、をそれぞれ
-       まとめる箱。?mode=checkin/checkout に応じてどちらか一方だけ
-       表示する(JS側で display を切り替える)。 */
+    /* 出勤用(訪問先+備考+ボタン)、退勤用(最終訪問先+備考+ボタン)、
+       をそれぞれまとめる箱。?mode=checkin/checkout に応じてどちらか
+       一方だけ表示する(JS側で display を切り替える)。
+       入力してからボタンを押す流れにするため、入力欄→ボタンの順で並べている。 */
     .punchGroup {
       margin-bottom: 54px;
     }
 
     /* 「訪問先」「最終訪問先」「備考」、いずれも見た目は共通にしている。 */
-    .remarksField {
-      margin-bottom: 54px;
+    .visitField, .remarksField {
+      margin-bottom: 44px;
     }
     .visitField label, .remarksField label {
       display: block;
@@ -214,8 +214,17 @@
         <div id="userInfo">読み込み中...</div>
       </div>
 
-      <!-- 出勤用の画面(?mode=checkin で開いた場合はここだけ表示) -->
+      <!-- 出勤用の画面(?mode=checkin で開いた場合はここだけ表示)
+           入力してからボタンを押す流れにするため、訪問先→備考→ボタンの順で並べる -->
       <div class="punchGroup" id="checkinGroup">
+        <div class="visitField">
+          <label for="checkinVisitInput">訪問先</label>
+          <input type="text" id="checkinVisitInput">
+        </div>
+        <div class="remarksField">
+          <label for="checkinRemarksInput">備考</label>
+          <textarea id="checkinRemarksInput" rows="3"></textarea>
+        </div>
         <div class="buttons">
           <button id="btnCheckIn" class="punch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -226,14 +235,19 @@
             出　勤
           </button>
         </div>
-        <div class="visitField">
-          <label for="checkinVisitInput">訪問先</label>
-          <input type="text" id="checkinVisitInput">
-        </div>
       </div>
 
-      <!-- 退勤用の画面(?mode=checkout で開いた場合はここだけ表示) -->
+      <!-- 退勤用の画面(?mode=checkout で開いた場合はここだけ表示)
+           同様に、最終訪問先→備考→ボタンの順で並べる -->
       <div class="punchGroup" id="checkoutGroup">
+        <div class="visitField">
+          <label for="checkoutVisitInput">最終訪問先</label>
+          <input type="text" id="checkoutVisitInput">
+        </div>
+        <div class="remarksField">
+          <label for="checkoutRemarksInput">備考</label>
+          <textarea id="checkoutRemarksInput" rows="3"></textarea>
+        </div>
         <div class="buttons">
           <button id="btnCheckOut" class="punch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -244,15 +258,6 @@
             退　勤
           </button>
         </div>
-        <div class="visitField">
-          <label for="checkoutVisitInput">最終訪問先</label>
-          <input type="text" id="checkoutVisitInput">
-        </div>
-      </div>
-
-      <div class="remarksField">
-        <label for="remarksInput">備考</label>
-        <textarea id="remarksInput" rows="3"></textarea>
       </div>
 
       <div id="status">準備中です。しばらくお待ちください。</div>
@@ -271,7 +276,8 @@
     var btnCheckOut = document.getElementById('btnCheckOut');
     var checkinVisitInput = document.getElementById('checkinVisitInput');
     var checkoutVisitInput = document.getElementById('checkoutVisitInput');
-    var remarksInput = document.getElementById('remarksInput');
+    var checkinRemarksInput = document.getElementById('checkinRemarksInput');
+    var checkoutRemarksInput = document.getElementById('checkoutRemarksInput');
     var checkinGroup = document.getElementById('checkinGroup');
     var checkoutGroup = document.getElementById('checkoutGroup');
     var clockTimeEl = document.getElementById('clockTime');
@@ -475,9 +481,10 @@
         return;
       }
 
-      // 「訪問先」(出勤)/「最終訪問先」(退勤)は、それぞれのボタンに
-      // 付随する任意入力欄。「備考」は出勤・退勤どちらでも使える任意入力欄。
+      // 「訪問先」(出勤)/「最終訪問先」(退勤)、「備考」は、それぞれ
+      // 出勤用・退勤用の画面ごとに用意した任意入力欄。
       var visitInput = type === '出勤' ? checkinVisitInput : checkoutVisitInput;
+      var remarksInput = type === '出勤' ? checkinRemarksInput : checkoutRemarksInput;
       var payload = { idToken: idToken, type: type, lat: lat, lng: lng };
       if (visitInput.value.trim()) {
         payload.note = visitInput.value.trim();
