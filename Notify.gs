@@ -26,6 +26,8 @@
  * @param {string} record.time 時刻 (HH:mm:ss)
  * @param {string} record.address 住所(簡易)
  * @param {string} [record.employeeEmail] 社員マスタに登録された個別通知先(任意)
+ * @param {string} [record.note] 最終訪問先(退勤時の任意入力。あれば通知に含める)
+ * @param {string} [record.remarks] 備考(自由記入の任意入力。あれば通知に含める)
  */
 function notifyAttendance_(record) {
   // 現状はメール通知のみ。将来チャネルを追加する場合はここに1行足すだけでよい。
@@ -54,7 +56,7 @@ function notifyViaEmail_(record) {
   }
 
   var subject = '【出退勤】' + record.name + ' さんが' + record.type + '打刻しました';
-  var body = [
+  var bodyLines = [
     '出退勤の打刻がありました。',
     '',
     '氏名  : ' + record.name,
@@ -62,9 +64,16 @@ function notifyViaEmail_(record) {
     '日付  : ' + record.date,
     '時刻  : ' + record.time,
     '位置  : ' + record.address,
-    '',
-    '※このメールは出退勤管理システムから自動送信されています。',
-  ].join('\n');
+  ];
+  // 「最終訪問先」「備考」は入力があったときだけメールに載せる。
+  if (record.note) {
+    bodyLines.push('最終訪問先: ' + record.note);
+  }
+  if (record.remarks) {
+    bodyLines.push('備考  : ' + record.remarks);
+  }
+  bodyLines.push('', '※このメールは出退勤管理システムから自動送信されています。');
+  var body = bodyLines.join('\n');
 
   MailApp.sendEmail({
     to: recipients.join(','),

@@ -172,6 +172,8 @@ function handlePunch_(e) {
       time: saved.time,
       address: address,
       employeeEmail: employee.notifyEmail,
+      note: note,
+      remarks: remarks,
     });
   } catch (notifyErr) {
     console.error('通知送信に失敗しました: ' + (notifyErr.message || notifyErr));
