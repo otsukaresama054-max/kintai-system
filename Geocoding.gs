@@ -1,11 +1,14 @@
 /**
  * Geocoding.gs
  * ------------------------------------------------------------
- * 緯度・経度から「詳細すぎない程度の住所文字列」を作る処理。
+ * 緯度・経度から住所文字列を作る処理。
  *
  * OpenStreetMapのNominatim(無料・APIキー不要)を利用する。
- * 都道府県・市区町村・町域レベルまでにとどめ、番地や建物名までは
- * 含めない(プライバシー配慮 + 要件の「詳細すぎない程度」に対応)。
+ * 都道府県・市区町村・町域に加えて、取得できる場合は
+ * 丁目/道路名・番地・建物名まで、できる限り詳しく組み立てる
+ * (Nominatimが持っているデータの粒度に依存するため、
+ * 都市部ほど詳細に、山間部・郊外などデータが粗い地域では
+ * 町域までにとどまることがある)。
  *
  * 利用ポリシー上、User-Agentに連絡先を含めることが推奨されているため、
  * NOMINATIM_USER_AGENT は運用者の情報に書き換えて使うこと。
@@ -18,7 +21,7 @@ var NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/reverse';
 var NOMINATIM_USER_AGENT = 'KintaiLiffApp/1.0 (contact: your-address@example.com)';
 
 /**
- * 緯度経度を「詳細すぎない住所」の文字列に変換する。
+ * 緯度経度を、できる限り詳しい住所の文字列に変換する。
  * 外部サービス障害などで取得できない場合は例外を投げず、
  * その旨がわかる文字列を返す(打刻自体は失敗させない)。
  *
@@ -32,7 +35,9 @@ function reverseGeocodeToAddress_(lat, lng) {
       NOMINATIM_ENDPOINT +
       '?format=jsonv2&lat=' + encodeURIComponent(lat) +
       '&lon=' + encodeURIComponent(lng) +
-      '&accept-language=ja&zoom=14';
+      // zoom=18: 建物レベルまでの詳細な住所を要求する(データがなければ
+      // Nominatim側が取得できる範囲までを返してくれる)。
+      '&accept-language=ja&zoom=18&addressdetails=1';
 
     var response = UrlFetchApp.fetch(url, {
       method: 'get',
@@ -54,15 +59,21 @@ function reverseGeocodeToAddress_(lat, lng) {
     var data = JSON.parse(response.getContentText());
     var address = data.address || {};
 
-    // 詳細すぎない粒度(都道府県 / 市区町村 / 町域まで)だけを組み立てる。
-    // road(番地・通り名)やhouse_numberはあえて使わない。
+    // できる限り詳しい粒度で組み立てる。
+    // 都道府県 → 市区町村 → 町域 → 丁目/道路名 → 番地 → 建物名、の順。
+    // Nominatim側にデータがない項目は自動的に飛ばされる(=取得できる
+    // 範囲で最大限詳しくなる。都市部ほど詳しく、山間部・郊外など
+    // データが粗い地域では途中の粒度までになることがある)。
     var pref = address.state || '';
     var city =
       address.city || address.town || address.county || address.municipality || '';
     var district =
       address.suburb || address.neighbourhood || address.city_district || '';
+    var road = address.road || address.hamlet || '';
+    var houseNumber = address.house_number || '';
+    var building = address.building || '';
 
-    var parts = [pref, city, district].filter(function (s) {
+    var parts = [pref, city, district, road, houseNumber, building].filter(function (s) {
       return s && s.length > 0;
     });
 

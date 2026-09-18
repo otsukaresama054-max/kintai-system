@@ -23,7 +23,7 @@ GitHub Pages で公開した index.html (画面)
 GAS Web App (doPost / Code.gs)  ※画面は返さず、API専用
       ├─ LiffAuth.gs      … LINEのIDトークンをLINEサーバーで検証
       ├─ Employees.gs     … 社員マスタから正式な氏名を取得
-      ├─ Geocoding.gs     … 緯度経度 → 簡易住所(OSM Nominatim)
+      ├─ Geocoding.gs     … 緯度経度 → 住所(OSM Nominatim。取得できる範囲で最大限詳しく)
       ├─ AttendanceSheet.gs … スプレッドシートへ記録
       └─ Notify.gs        … 通知(現在はメール。差し替え・追加が容易)
 ```
@@ -39,7 +39,7 @@ GAS Web App (doPost / Code.gs)  ※画面は返さず、API専用
 | `LiffAuth.gs` | Google Apps Script | LIFF IDトークンの検証 |
 | `Employees.gs` | Google Apps Script | 社員マスタの読み込み |
 | `AttendanceSheet.gs` | Google Apps Script | 出退勤記録シートへの書き込み |
-| `Geocoding.gs` | Google Apps Script | 緯度経度→簡易住所変換 |
+| `Geocoding.gs` | Google Apps Script | 緯度経度→住所変換(取得できる範囲で丁目・番地・建物名まで) |
 | `Notify.gs` | Google Apps Script | 通知処理(独立関数。宛先追加・通知方法追加はここを触るだけでよい) |
 | `Setup.gs` | Google Apps Script | 初回セットアップ用(シート・ヘッダー自動作成) |
 | `MonthlyReport.gs` | Google Apps Script | 「20日締め」月次勤怠のPDFを社員ごとに出力する機能(手動実行) |
