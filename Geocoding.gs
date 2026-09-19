@@ -59,6 +59,14 @@ function reverseGeocodeToAddress_(lat, lng) {
     var data = JSON.parse(response.getContentText());
     var address = data.address || {};
 
+    // 【調査用ログ】Nominatimが実際にどんな情報を返してきているかを
+    // 実行ログに残す(表示される住所が思ったより詳しくならない場合、
+    // このログを見れば「road/house_number/buildingがそもそも
+    // データにあるのか無いのか」を確認できる。原因が分かったら、
+    // このconsole.logの行は削除してよい)。
+    console.log('Nominatim address breakdown: ' + JSON.stringify(address));
+    console.log('Nominatim display_name: ' + data.display_name);
+
     // できる限り詳しい粒度で組み立てる。
     // 都道府県 → 市区町村 → 町域 → 丁目/道路名 → 番地 → 建物名、の順。
     // Nominatim側にデータがない項目は自動的に飛ばされる(=取得できる
