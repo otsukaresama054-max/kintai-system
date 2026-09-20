@@ -28,8 +28,8 @@ var NOMINATIM_USER_AGENT = 'KintaiLiffApp/1.0 (contact: your-address@example.com
 
 /**
  * 緯度経度を、できる限り詳しい住所の文字列に変換する。
- * 外部サービス障害などで取得できない場合は例外を投げず、
- * その旨がわかる文字列を返す(打刻自体は失敗させない)。
+ * 外部サービス障害などで住所への変換ができない場合は例外を投げず、
+ * 代わりに緯度・経度をそのまま文字列で返す(打刻自体は失敗させない)。
  *
  * @param {number} lat
  * @param {number} lng
@@ -53,16 +53,17 @@ function reverseGeocodeToAddress_(lat, lng) {
 
     if (response.getResponseCode() !== 200) {
       // 詳しい原因(ステータスコード等)は実行ログにだけ残す。
-      // 画面(打刻した本人)に「失敗」という言葉やエラーコードを
-      // そのまま見せると、打刻自体は成功しているのに「失敗した」と
-      // 誤解して何度も打刻ボタンを押し直されてしまうため、
-      // 画面向けには「打刻自体は問題ない」ことが伝わる文言にする。
+      // 画面(打刻した本人)に「失敗」という言葉やエラーコードを見せると、
+      // 打刻自体は成功しているのに「失敗した」と誤解して何度も打刻
+      // ボタンを押し直されてしまうため、画面には代わりに緯度・経度の
+      // 数値をそのまま見せる(位置情報自体は取得できていることが
+      // 一目でわかるようにするため)。
       var bodySnippet = response.getContentText().substring(0, 300);
       console.log(
         '住所取得(Nominatim)に失敗しました。 status=' + response.getResponseCode() +
           ' body=' + bodySnippet + ' / 緯度' + lat + ' 経度' + lng
       );
-      return '住所は取得できませんでした(打刻自体は正常に完了しています)';
+      return formatLatLng_(lat, lng);
     }
 
     var data = JSON.parse(response.getContentText());
@@ -91,15 +92,28 @@ function reverseGeocodeToAddress_(lat, lng) {
     );
 
     if (parts.length === 0) {
-      return data.display_name || '住所は取得できませんでした(打刻自体は正常に完了しています)';
+      return data.display_name || formatLatLng_(lat, lng);
     }
     return parts.join('');
   } catch (e) {
     // ネットワークエラー等。打刻自体は継続させるため例外は投げない。
     var errMsg = e && e.message ? e.message : String(e);
     console.log('住所取得(Nominatim)で例外が発生しました: ' + errMsg);
-    // 上と同様、画面向けには「打刻自体は問題ない」ことが伝わる文言にする。
     // 詳しい例外メッセージは実行ログで確認できる。
-    return '住所は取得できませんでした(打刻自体は正常に完了しています)';
+    return formatLatLng_(lat, lng);
   }
+}
+
+/**
+ * 住所への変換ができなかった場合の代わりの表示。
+ * 「取得できませんでした」のような曖昧な文言だと、位置情報自体が
+ * 取得できているのかどうか本人に伝わりにくいため、実際に届いている
+ * 緯度・経度をそのまま数値で見せることで「位置情報自体は正しく
+ * 取得できている」ことが一目でわかるようにする。
+ * @param {number} lat
+ * @param {number} lng
+ * @return {string}
+ */
+function formatLatLng_(lat, lng) {
+  return '緯度' + lat.toFixed(6) + ' 経度' + lng.toFixed(6);
 }
