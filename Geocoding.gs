@@ -52,14 +52,17 @@ function reverseGeocodeToAddress_(lat, lng) {
     });
 
     if (response.getResponseCode() !== 200) {
-      // 原因調査用に、実際のステータスコードと返却内容を実行ログに残す。
+      // 詳しい原因(ステータスコード等)は実行ログにだけ残す。
+      // 画面(打刻した本人)に「失敗」という言葉やエラーコードを
+      // そのまま見せると、打刻自体は成功しているのに「失敗した」と
+      // 誤解して何度も打刻ボタンを押し直されてしまうため、
+      // 画面向けには「打刻自体は問題ない」ことが伝わる文言にする。
       var bodySnippet = response.getContentText().substring(0, 300);
       console.log(
         '住所取得(Nominatim)に失敗しました。 status=' + response.getResponseCode() +
-          ' body=' + bodySnippet
+          ' body=' + bodySnippet + ' / 緯度' + lat + ' 経度' + lng
       );
-      // 実行ログを探す手間を省くため、画面にもステータスコードを直接表示する。
-      return '住所取得失敗(HTTP ' + response.getResponseCode() + ' / 緯度' + lat + ' 経度' + lng + ')';
+      return '住所は取得できませんでした(打刻自体は正常に完了しています)';
     }
 
     var data = JSON.parse(response.getContentText());
@@ -88,14 +91,15 @@ function reverseGeocodeToAddress_(lat, lng) {
     );
 
     if (parts.length === 0) {
-      return data.display_name || '住所を特定できませんでした';
+      return data.display_name || '住所は取得できませんでした(打刻自体は正常に完了しています)';
     }
     return parts.join('');
   } catch (e) {
     // ネットワークエラー等。打刻自体は継続させるため例外は投げない。
     var errMsg = e && e.message ? e.message : String(e);
     console.log('住所取得(Nominatim)で例外が発生しました: ' + errMsg);
-    // 実行ログを探す手間を省くため、画面にも例外メッセージを直接表示する。
-    return '住所取得失敗(' + errMsg + ')';
+    // 上と同様、画面向けには「打刻自体は問題ない」ことが伝わる文言にする。
+    // 詳しい例外メッセージは実行ログで確認できる。
+    return '住所は取得できませんでした(打刻自体は正常に完了しています)';
   }
 }
