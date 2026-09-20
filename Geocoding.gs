@@ -4,11 +4,17 @@
  * 緯度・経度から住所文字列を作る処理。
  *
  * OpenStreetMapのNominatim(無料・APIキー不要)を利用する。
- * 都道府県・市区町村・町域に加えて、取得できる場合は
- * 丁目/道路名・番地・建物名まで、できる限り詳しく組み立てる
+ * 都道府県・市区町村・区・丁目・道路名・番地・建物名まで、
+ * 取得できる範囲でできる限り詳しく組み立てる
  * (Nominatimが持っているデータの粒度に依存するため、
  * 都市部ほど詳細に、山間部・郊外などデータが粗い地域では
- * 町域までにとどまることがある)。
+ * 途中の粒度までにとどまることがある)。
+ *
+ * 大阪市のような政令指定都市では、「区」(suburb/city_district)と
+ * 「丁目」(neighbourhood)が両方とも別々の項目として存在するため、
+ * どちらか一方だけでなく両方を組み立てに使う。
+ * また、都道府県は "state" ではなく "province" という項目名で
+ * 返ってくる場合があるため、両方を見るようにしている。
  *
  * 利用ポリシー上、User-Agentに連絡先を含めることが推奨されているため、
  * NOMINATIM_USER_AGENT は運用者の情報に書き換えて使うこと。
@@ -59,31 +65,27 @@ function reverseGeocodeToAddress_(lat, lng) {
     var data = JSON.parse(response.getContentText());
     var address = data.address || {};
 
-    // 【調査用ログ】Nominatimが実際にどんな情報を返してきているかを
-    // 実行ログに残す(表示される住所が思ったより詳しくならない場合、
-    // このログを見れば「road/house_number/buildingがそもそも
-    // データにあるのか無いのか」を確認できる。原因が分かったら、
-    // このconsole.logの行は削除してよい)。
-    console.log('Nominatim address breakdown: ' + JSON.stringify(address));
-    console.log('Nominatim display_name: ' + data.display_name);
-
     // できる限り詳しい粒度で組み立てる。
-    // 都道府県 → 市区町村 → 町域 → 丁目/道路名 → 番地 → 建物名、の順。
+    // 都道府県 → 市区町村 → 区 → 丁目 → 道路名 → 番地 → 建物名、の順。
+    // 「区」と「丁目」は片方だけでなく、両方存在すれば両方使う
+    // (政令指定都市では両方とも別々の項目としてデータが存在するため)。
     // Nominatim側にデータがない項目は自動的に飛ばされる(=取得できる
     // 範囲で最大限詳しくなる。都市部ほど詳しく、山間部・郊外など
     // データが粗い地域では途中の粒度までになることがある)。
-    var pref = address.state || '';
+    var pref = address.state || address.province || '';
     var city =
       address.city || address.town || address.county || address.municipality || '';
-    var district =
-      address.suburb || address.neighbourhood || address.city_district || '';
+    var ward = address.suburb || address.city_district || ''; // 例: 淀川区
+    var neighbourhood = address.neighbourhood || address.quarter || ''; // 例: 新北野一丁目
     var road = address.road || address.hamlet || '';
     var houseNumber = address.house_number || '';
     var building = address.building || '';
 
-    var parts = [pref, city, district, road, houseNumber, building].filter(function (s) {
-      return s && s.length > 0;
-    });
+    var parts = [pref, city, ward, neighbourhood, road, houseNumber, building].filter(
+      function (s) {
+        return s && s.length > 0;
+      }
+    );
 
     if (parts.length === 0) {
       return data.display_name || '住所を特定できませんでした';
@@ -96,40 +98,4 @@ function reverseGeocodeToAddress_(lat, lng) {
     // 実行ログを探す手間を省くため、画面にも例外メッセージを直接表示する。
     return '住所取得失敗(' + errMsg + ')';
   }
-}
-
-/**
- * 【調査用・一時的な関数】実際にテストした座標(大阪市淀川区付近)で
- * Nominatimに直接問い合わせて、その生レスポンス(JSON)をそのまま
- * テキストとして返す。Code.gsのdoGetから ?debug=geocode で呼ばれる。
- * ブラウザで直接そのURLを開けば、結果がそのまま画面に表示される
- * (Apps Scriptエディタの操作は一切不要)。
- * 原因が分かったら、この関数ごと削除してよい。
- * @return {GoogleAppsScript.Content.TextOutput}
- */
-function debugGeocodeAsText_() {
-  var lat = 34.71456515898639;
-  var lng = 135.4874020520385;
-  var url =
-    NOMINATIM_ENDPOINT +
-    '?format=jsonv2&lat=' + encodeURIComponent(lat) +
-    '&lon=' + encodeURIComponent(lng) +
-    '&accept-language=ja&zoom=18&addressdetails=1';
-
-  var response = UrlFetchApp.fetch(url, {
-    method: 'get',
-    headers: { 'User-Agent': NOMINATIM_USER_AGENT },
-    muteHttpExceptions: true,
-  });
-
-  var text = 'HTTPステータス: ' + response.getResponseCode() + '\n\n';
-  if (response.getResponseCode() === 200) {
-    var data = JSON.parse(response.getContentText());
-    text +=
-      '住所の内訳(address): ' + JSON.stringify(data.address) + '\n\n' +
-      'display_name: ' + data.display_name + '\n\n';
-  }
-  text += '---生レスポンス---\n' + response.getContentText();
-
-  return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.TEXT);
 }
