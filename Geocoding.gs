@@ -97,3 +97,14 @@ function reverseGeocodeToAddress_(lat, lng) {
     return '住所取得失敗(' + errMsg + ')';
   }
 }
+
+/**
+ * 【調査用・一時的な関数】実際にテストした座標(大阪市淀川区付近)で
+ * reverseGeocodeToAddress_ を1回だけ実行し、結果を実行ログに出す。
+ * 関数選択のプルダウンからこの関数を選んで▶実行すること。
+ * 原因が分かったら、この関数ごと削除してよい。
+ */
+function debugGeocodeTest_() {
+  var result = reverseGeocodeToAddress_(34.71456515898639, 135.4874020520385);
+  Logger.log('組み立てた住所: ' + result);
+}
