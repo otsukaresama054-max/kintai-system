@@ -22,6 +22,13 @@ var ATTENDANCE_TYPES = ['出勤', '退勤'];
  * (LIFF画面は別ホスティングにあるため、ここでは何も表示しない)
  */
 function doGet(e) {
+  // 【調査用・一時的な分岐】?debug=geocode を付けてブラウザで直接開くと、
+  // Nominatimの生レスポンスがそのまま画面に表示される(住所の詳細度調査用)。
+  // 原因が分かったら、この分岐とGeocoding.gsのdebugGeocodeAsText_は削除してよい。
+  if (e && e.parameter && e.parameter.debug === 'geocode') {
+    return debugGeocodeAsText_();
+  }
+
   return ContentService.createTextOutput(
     'このURLは出退勤管理システムのAPI用エンドポイントです。\n' +
       '打刻画面はこちらではなく、LIFFアプリ(LINE)から開いてください。'

@@ -100,11 +100,36 @@ function reverseGeocodeToAddress_(lat, lng) {
 
 /**
  * 【調査用・一時的な関数】実際にテストした座標(大阪市淀川区付近)で
- * reverseGeocodeToAddress_ を1回だけ実行し、結果を実行ログに出す。
- * 関数選択のプルダウンからこの関数を選んで▶実行すること。
+ * Nominatimに直接問い合わせて、その生レスポンス(JSON)をそのまま
+ * テキストとして返す。Code.gsのdoGetから ?debug=geocode で呼ばれる。
+ * ブラウザで直接そのURLを開けば、結果がそのまま画面に表示される
+ * (Apps Scriptエディタの操作は一切不要)。
  * 原因が分かったら、この関数ごと削除してよい。
+ * @return {GoogleAppsScript.Content.TextOutput}
  */
-function debugGeocodeTest_() {
-  var result = reverseGeocodeToAddress_(34.71456515898639, 135.4874020520385);
-  Logger.log('組み立てた住所: ' + result);
+function debugGeocodeAsText_() {
+  var lat = 34.71456515898639;
+  var lng = 135.4874020520385;
+  var url =
+    NOMINATIM_ENDPOINT +
+    '?format=jsonv2&lat=' + encodeURIComponent(lat) +
+    '&lon=' + encodeURIComponent(lng) +
+    '&accept-language=ja&zoom=18&addressdetails=1';
+
+  var response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    headers: { 'User-Agent': NOMINATIM_USER_AGENT },
+    muteHttpExceptions: true,
+  });
+
+  var text = 'HTTPステータス: ' + response.getResponseCode() + '\n\n';
+  if (response.getResponseCode() === 200) {
+    var data = JSON.parse(response.getContentText());
+    text +=
+      '住所の内訳(address): ' + JSON.stringify(data.address) + '\n\n' +
+      'display_name: ' + data.display_name + '\n\n';
+  }
+  text += '---生レスポンス---\n' + response.getContentText();
+
+  return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.TEXT);
 }
